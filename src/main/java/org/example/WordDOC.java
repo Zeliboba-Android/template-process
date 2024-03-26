@@ -18,7 +18,7 @@ import java.net.URLDecoder;
 public class WordDOC {
     /**
      * Метод changeFile() извлекает документ test.doc из ресурсов класспути,
-     * заменяет определенные текстовые метки в документе и сохраняет изменения в new_test.doc.
+     * заменяет определенные текстовые метки в документе и сохраняет изменения.
      * @throws IOException если возникает ошибка ввода-вывода при чтении или записи файла
      */
     public void changeFile() throws IOException{
@@ -26,19 +26,15 @@ public class WordDOC {
         String fileUrl = getClass().getClassLoader().getResource("test.doc").getPath();
         // Декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
         String filePath = URLDecoder.decode(fileUrl, "UTF-8");
-        // Создаем новый путь к файлу
-        String newFilePath = filePath.replace("test.doc", "new_test.doc");
-        /*
-         * inputStream - входной поток данных, FileInputStream - чтения байтов из файла
-         * POIFSFileSystem - объект для работы с документом Word
-         */
+        // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
+        // POIFSFileSystem - объект для работы с документом Word
         try (InputStream inputStream = new FileInputStream(filePath);
              POIFSFileSystem fileSystem = new POIFSFileSystem(inputStream)){
             // создание объект для работы с .doc
             HWPFDocument doc = new HWPFDocument(fileSystem);
             // замена текста в doc и сохранение изменений
             doc = replaceText(doc, "${authors}", "Матюшкин и Миронов");
-            saveFile(newFilePath, doc);
+            saveFile(filePath, doc);
             doc.close();
         }
     }
