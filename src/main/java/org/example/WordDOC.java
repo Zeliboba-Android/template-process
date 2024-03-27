@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
+import java.util.Map;
 
 /**
  * Класс WordDOC предоставляет функционал для изменения содержимого документа типа .doc.
@@ -21,10 +22,10 @@ public class WordDOC {
      * заменяет определенные текстовые метки в документе и сохраняет изменения.
      * @throws IOException если возникает ошибка ввода-вывода при чтении или записи файла
      */
-    public void changeFile() throws IOException{
+    public void changeFile(TagMap tagMap) throws IOException{
         // извлечение пути к файлу test.doc из ресурсов класспути и сохранение его в переменной filePath
         String fileUrl = getClass().getClassLoader().getResource("test.doc").getPath();
-        // Декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
+        // декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
         String filePath = URLDecoder.decode(fileUrl, "UTF-8");
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
         // POIFSFileSystem - объект для работы с документом Word
@@ -33,7 +34,13 @@ public class WordDOC {
             // создание объект для работы с .doc
             HWPFDocument doc = new HWPFDocument(fileSystem);
             // замена текста в doc и сохранение изменений
-            doc = replaceText(doc, "${authors}", "Матюшкин и Миронов");
+            for(Map.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
+                // получение ключа
+                String tag = entry.getKey();
+                // получение значения
+                String replaceWord = entry.getValue();
+                doc = replaceText(doc, tag, replaceWord);
+            }
             saveFile(filePath, doc);
             doc.close();
         }
