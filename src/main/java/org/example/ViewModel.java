@@ -11,8 +11,11 @@ public class ViewModel extends JPanel {
     private Main main;
     private JButton generateButton;
     private JTextField textFieldFIO;
-    private JTextField textFieldBirthDay;
-    private JTextField textFieldesidence;
+    private JTextField textFieldDate;
+    private JTextField textFieldPost;
+    private JTextField textFieldCompany;
+    private JTextField textFieldDecode;
+    private JTextField textFieldChief;
     private JRadioButton radioButtonDOC;
     private JRadioButton radioButtonDOCX;
     private JLabel labelTypeOfDocument;
@@ -36,34 +39,48 @@ public class ViewModel extends JPanel {
     }
     public void initializeUI(){
         textFieldFIO = new JTextField();
-        textFieldFIO.setBounds(150, 100, 200, 30);
+        textFieldFIO.setBounds(150, 50, 200, 30);
         addPlaceholder(textFieldFIO,"Enter your FIO");
-
         add(textFieldFIO);
 
-        textFieldBirthDay = new JTextField();
-        textFieldBirthDay.setBounds(150, 150, 200, 30);
-        addPlaceholder(textFieldBirthDay,"Enter your date of birth");
-        add(textFieldBirthDay);
+        textFieldDate = new JTextField();
+        textFieldDate.setBounds(150, 100, 200, 30);
+        addPlaceholder(textFieldDate,"Enter date");
+        add(textFieldDate);
 
-        textFieldesidence = new JTextField();
-        textFieldesidence.setBounds(150, 200, 200, 30);
-        addPlaceholder(textFieldesidence,"Enter your place of residence");
-        add(textFieldesidence);
+        textFieldPost = new JTextField();
+        textFieldPost.setBounds(150, 150, 200, 30);
+        addPlaceholder(textFieldPost,"Enter your post");
+        add(textFieldPost);
+
+        textFieldCompany = new JTextField();
+        textFieldCompany.setBounds(150, 200, 200, 30);
+        addPlaceholder(textFieldCompany,"Enter your company");
+        add(textFieldCompany);
+
+        textFieldDecode = new JTextField();
+        textFieldDecode.setBounds(150, 250, 200, 30);
+        addPlaceholder(textFieldDecode,"Enter your decode");
+        add(textFieldDecode);
+
+        textFieldChief = new JTextField();
+        textFieldChief.setBounds(150, 300, 200, 30);
+        addPlaceholder(textFieldChief,"Enter your chief");
+        add(textFieldChief);
 
         labelTypeOfDocument = new JLabel();
-        labelTypeOfDocument.setBounds(150,250,200,30);
+        labelTypeOfDocument.setBounds(150,350,200,30);
         labelTypeOfDocument.setText("Select the document type");
         Font font = labelTypeOfDocument.getFont();
         labelTypeOfDocument.setFont(font.deriveFont(Font.BOLD,14));
         add(labelTypeOfDocument);
 
         radioButtonDOC = new JRadioButton(".doc");
-        radioButtonDOC.setBounds(150, 300, 80, 30);
+        radioButtonDOC.setBounds(150, 400, 80, 30);
         add(radioButtonDOC);
 
         radioButtonDOCX = new JRadioButton(".docx");
-        radioButtonDOCX.setBounds(230, 300, 100, 30);
+        radioButtonDOCX.setBounds(230, 400, 100, 30);
         add(radioButtonDOCX);
 
         ButtonGroup genderGroup = new ButtonGroup();
@@ -71,7 +88,7 @@ public class ViewModel extends JPanel {
         genderGroup.add(radioButtonDOCX);
 
         generateButton = new JButton("Generate document");
-        generateButton.setBounds(150,350,200,50);
+        generateButton.setBounds(150,450,200,50);
         generateButton.setRolloverEnabled(false);
         generateButton.setBackground(Color.lightGray);
         generateButton.addActionListener(new ActionListener() {
@@ -118,34 +135,73 @@ public class ViewModel extends JPanel {
         return fio;
     }
 
-    public String getTextFieldBirthday() {
-        String birthday = textFieldBirthDay.getText().trim();
-        if (birthday.isEmpty() || birthday.equals("Enter your date of birth")){
+    public String getTextFieldDate() {
+        String date = textFieldDate.getText().trim();
+        if (date.isEmpty() || date.equals("Enter date")){
             JOptionPane.showMessageDialog(
                     this,
-                    "Please enter your date of birth.",
+                    "Please enter date.",
                     "Error", JOptionPane.ERROR_MESSAGE
             );
             return null;
         }
-        return birthday;
+        return date;
     }
 
-    public String getTextFieldesidence() {
-        String residence = textFieldesidence.getText().trim();
-        if (residence.isEmpty() || residence.equals("Enter your place of residence")){
+    public String getTextFieldPost() {
+        String post = textFieldPost.getText().trim();
+        if (post.isEmpty() || post.equals("Enter your post")){
             JOptionPane.showMessageDialog(
                     this,
-                    "Please enter your place of residence.",
+                    "Please enter your post.",
                     "Error", JOptionPane.ERROR_MESSAGE
             );
             return null;
         }
-        return residence;
+        return post;
     }
+
+    public String getTextFieldCompany() {
+        String company = textFieldCompany.getText().trim();
+        if (company.isEmpty() || company.equals("Enter your company")){
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter your company.",
+                    "Error", JOptionPane.ERROR_MESSAGE
+            );
+            return null;
+        }
+        return company;
+    }
+
+    public String getTextFieldDecode() {
+        String decode = textFieldDecode.getText().trim();
+        if (decode.isEmpty() || decode.equals("Enter your decode")){
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter your decode.",
+                    "Error", JOptionPane.ERROR_MESSAGE
+            );
+            return null;
+        }
+        return decode;
+    }
+
+    public String getTextFieldChief() {
+        String chief = textFieldChief.getText().trim();
+        if (chief.isEmpty() || chief.equals("Enter your chief")){
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter Enter your chief.",
+                    "Error", JOptionPane.ERROR_MESSAGE
+            );
+            return null;
+        }
+        return chief;
+    }
+
     protected void paintComponent(Graphics g){
         super.paintComponent(g);
         g.setColor(Color.black);
     }
-
 }
