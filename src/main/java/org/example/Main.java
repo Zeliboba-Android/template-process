@@ -22,18 +22,12 @@ public class Main {
     // функция заполнения значений тегов
     void fillTags(){
         tagMap = new TagMap();
-        if (viewModel.getTextFieldFIO()!= null)
-            tagMap.getTagMap().put("${fio}", viewModel.getTextFieldFIO());
-        if (viewModel.getTextFieldDate()!=null)
-            tagMap.getTagMap().put("${date}", viewModel.getTextFieldDate());
-        if (viewModel.getTextFieldPost()!=null)
-            tagMap.getTagMap().put("${post}", viewModel.getTextFieldPost());
-        if (viewModel.getTextFieldCompany()!=null)
-            tagMap.getTagMap().put("${company}", viewModel.getTextFieldCompany());
-        if (viewModel.getTextFieldDecode()!=null)
-            tagMap.getTagMap().put("${decode}", viewModel.getTextFieldDecode());
-        if (viewModel.getTextFieldChief()!=null)
-            tagMap.getTagMap().put("${chief}", viewModel.getTextFieldChief());
+        tagMap.getTagMap().put("${fio}", viewModel.getTextFieldFIO());
+        tagMap.getTagMap().put("${date}", viewModel.getTextFieldDate());
+        tagMap.getTagMap().put("${post}", viewModel.getTextFieldPost());
+        tagMap.getTagMap().put("${company}", viewModel.getTextFieldCompany());
+        tagMap.getTagMap().put("${decode}", viewModel.getTextFieldDecode());
+        tagMap.getTagMap().put("${chief}", viewModel.getTextFieldChief());
     }
 
     void replaceTextDoc(){
@@ -49,7 +43,7 @@ public class Main {
                 wordDOC.changeFile();
                 System.out.println("Файл .doc успешно изменен");
             } else {
-                System.out.println("Не удалось изменить файл .doc. Обнаружены пустые значения.");
+                System.out.println("Не удалось изменить файл .doc Обнаружены пустые значения.");
             }
         } catch (IOException e) {
             // обработка исключения в случае возникновения ошибки при изменении файла
@@ -59,25 +53,32 @@ public class Main {
     }
 
     void replaceTextDocx(){
-        // вызов функции заполнения тегов
         fillTags();
-        // создание экземпляра класса WordDOC
+        // создание экземпляра класса WordDOCX
         WordDOCX wordDOCX = new WordDOCX(tagMap);
         try {
-            // вызов метода изменения файла
-            wordDOCX.changeFile();
-            System.out.println("Файл .docx успешно изменен");
+            // Проверка наличия пустых значений в TagMap
+            boolean hasEmptyValues = checkForEmptyValues();
+            if (!hasEmptyValues) {
+                // вызов метода изменения файла
+                wordDOCX.changeFile();
+                System.out.println("Файл .docx успешно изменен");
+            } else {
+                System.out.println("Не удалось изменить файл .docx Обнаружены пустые значения.");
+            }
         } catch (IOException e) {
             // обработка исключения в случае возникновения ошибки при изменении файла
             System.err.println("Ошибка при изменении файла .docx:");
             throw new RuntimeException(e);
         }
     }
+    // функция проверяет есть ли в теге что-то или там пусто, или null и выводит соответсвующее сообщение в консоль,
+    // а если значение есть, то возвращает false
     boolean checkForEmptyValues() {
         boolean hasEmptyValues = false;
         for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
             String value = entry.getValue();
-            if (value == null || value.isEmpty()) {
+            if (value == null ||value.isEmpty()) {
                 // Обработка пустого значения
                 System.out.println("Пустое значение для ключа: " + entry.getKey());
                 hasEmptyValues = true;
