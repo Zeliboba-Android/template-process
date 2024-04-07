@@ -31,19 +31,13 @@ public class WordDOCX {
         // декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
         String filePath = URLDecoder.decode(fileUrl, "UTF-8");
         // Создаем новый путь к файлу
-        String newFilePath = filePath.replace("test.doc", "new_test.doc");
+        String newFilePath = filePath.replace("test.docx", "new_test.docx");
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
         try (InputStream inputStream = new FileInputStream(filePath)){
             // создание объект для работы с .docx
             XWPFDocument doc = new XWPFDocument(inputStream);
             // замена текста в docx и сохранение изменений
-            for(HashMap.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
-                // получение ключа
-                String tag = entry.getKey();
-                // получение значения
-                String replaceWord = entry.getValue();
-                doc = replaceText(doc, tag, replaceWord);
-            }
+            doc = replaceText(doc);
             saveFile(newFilePath, doc);
             doc.close();
         }
@@ -52,13 +46,11 @@ public class WordDOCX {
     /**
      * Метод replaceText() выполняет замену указанного тега на соответствующее слово в документе.
      * @param doc объект XWPFDocument, представляющий документ, в котором нужно выполнить замену.
-     * @param tag тег, который требуется заменить.
-     * @param replaceWord слово, на которое нужно заменить тег.
      * @return XWPFDocument с выполненной заменой.
      */
-    private XWPFDocument replaceText(XWPFDocument doc, String tag, String replaceWord) {
+    private XWPFDocument replaceText(XWPFDocument doc) {
         // обработка всех абзацев в документе
-        iterationAllParagraphs(doc.getParagraphs(), tag, replaceWord);
+        iterationAllParagraphs(doc.getParagraphs());
         // при наличии таблиц
         for (XWPFTable table : doc.getTables()) {
             // обработка каждой строки в таблице
@@ -66,7 +58,7 @@ public class WordDOCX {
                 // обработка каждой ячейки в строке
                 for (XWPFTableCell cell : row.getTableCells()) {
                     // обработка всех абзацев в ячейке
-                    iterationAllParagraphs(cell.getParagraphs(), tag, replaceWord);
+                    iterationAllParagraphs(cell.getParagraphs());
                 }
             }
         }
@@ -77,147 +69,174 @@ public class WordDOCX {
      * Метод iterationAllParagraphs() выполняет итерацию по всем абзацам в списке абзацев документа
      * и передает каждый абзац в метод iterateThroughRuns() для замены текста.
      * @param paragraphs список абзацев, которые нужно обработать.
-     * @param tag тег, который требуется заменить.
-     * @param replaceWord слово, на которое нужно заменить тег.
      */
-    private void iterationAllParagraphs(List<XWPFParagraph> paragraphs, String tag, String replaceWord){
-        // итерация по всем абзацам в списке
-        paragraphs.forEach(paragraph -> iterateThroughRuns(paragraph, tag, replaceWord));
+    private void iterationAllParagraphs(List<XWPFParagraph> paragraphs){
+        paragraphs.forEach(this::iterateThroughRuns);
     }
 
     /**
-     * Метод iterateThroughRuns() выполняет итерацию по всем объектам XWPFRun в абзаце и проверяет наличие
-     * указанного тега в тексте каждого объекта. При обнаружении тега выполняется его замена.
-     * @param paragraph абзац, в котором нужно проверить и заменить теги.
-     * @param tag тег, который требуется заменить.
-     * @param replaceWord слово, на которое нужно заменить тег.
+     * Итерирует через все объекты XWPFRun в заданном абзаце
+     * и меняет теги на значения
+     * @param paragraph абзац, содержащий объекты XWPFRun.
      */
-    private void iterateThroughRuns(XWPFParagraph paragraph, String tag, String replaceWord){
+    private void iterateThroughRuns(XWPFParagraph paragraph){
         List<XWPFRun> runs = paragraph.getRuns();
         // проверка наличия объектов XWPFRun в абзаце
-        if (runs == null){
+        if (runs == null)
             return;
-        }
-        // итерация по всем объектам в абзаце
-        for (XWPFRun run : runs){
-            String paragraphText = run.getText(0);
-            // проверка наличия текста в объекте XWPFRun
-            if (paragraphText != null){
-                // проверка наличия тега в тексте
-                if (paragraphText.contains(tag)) {
-                    // Замена тега на соответствующее слово
-                    replaceWord(run, paragraphText, tag, replaceWord);
-                } else if (paragraphText.contains("${") && !tagMap.getTagMap().containsKey(paragraphText)) {
-                    // замена переменной в первом случае разбиения
-                    replaceVariableFirstCase(paragraph, run, tag, replaceWord);
-                } else if (paragraphText.equals("$")) {
-                    // замена переменной во втором случае разбиения
-                    replaceVariableSecondCase(paragraph, run, tag, replaceWord);
+        int index = 0;
+        int runsSize = runs.size();
+        // вычисляет индекс новой позиции, начиная с которой будет продолжено замена тегов
+        int newIndex = checkTextParagraph(runs, index, runsSize);
+        // если новый индекс меньше текущего, то тега в абзаце нет
+        if (index > newIndex)
+            return;
+        // обновляет индекс
+        index = newIndex;
+        while (index < runsSize) {
+            XWPFRun run = runs.get(index);
+            StringBuilder runText = new StringBuilder(run.getText(0));
+            // проверяет, не пуст ли текст текущего объекта
+            if (runText != null) {
+                // если объект содержит полноценный тег, заменяет его
+                if (checkTag(runText.toString())) {
+                    replaceWord(run, runText);
+                    newIndex = checkTextParagraph(runs, index, runsSize);
+                    if (index > newIndex)
+                        return;
+                    index = newIndex;
+                } else if (runText.toString().contains("$")) {
+                    XWPFRun nextRun;
+                    String nextRunText;
+                    // пока не встретится закрывающая скобка, склеивает тег
+                    do {
+                        index++;
+                        nextRun = runs.get(index);
+                        nextRunText = nextRun.getText(0);
+                        runText.append(checkOptions(nextRun, nextRunText));
+                    } while (!nextRunText.contains("}"));
+                    // заменяет текст текущего объекта
+                    replaceWord(run, runText);
+                    newIndex = checkTextParagraph(runs, index, runsSize);
+                    if (index > newIndex)
+                        return;
+                    index = newIndex;
                 }
             }
         }
     }
 
     /**
-     * Метод replaceVariableFirstCase() заменяет переменную в первом случае разбиения строки,
-     * когда переменная начинается в одном объекте XWPFRun и заканчивается в другом.
-     * Начало: ${ -> name -> }
-     * Итог: tag -> "" -> ""
-     * @param paragraph абзац, содержащий объекты XWPFRun, в которых находится переменная.
-     * @param run объект XWPFRun, содержащий начало переменной.
-     * @param tag тег, который требуется заменить.
-     * @param replaceWord слово, на которое нужно заменить тег.
+     * Проверяет абзац на наличие частей тега, начиная с указанного индекса.
+     * @param runs список объектов XWPFRun, представляющих текст абзаца.
+     * @param index индекс, с которого начинается проверка абзаца.
+     * @param runsSize размер списка объектов XWPFRun.
+     * @return индекс, от которого следует проверять абзац, либо index - 1, если тег не найден.
      */
-    private void replaceVariableFirstCase(XWPFParagraph paragraph, XWPFRun run, String tag, String replaceWord){
-        List<XWPFRun> runs = paragraph.getRuns();
-        // получаем индекс текущего объекта
-        int i = runs.indexOf(run);
-        // получаем следующий объект после текущего
-        XWPFRun tagWordRun = runs.get(i+1);
-        // получаем текст следующего объекта
-        String tagWordParagraphText = tagWordRun.getText(0);
-        // проверка, что переменная содержится в следующем объекте XWPFRun
-        if (tag.contains(tagWordParagraphText)){
-            // проверка, что переменная не заканчивается в текущем объекте - временно
-            if (!tagWordParagraphText.contains("}")){
-                // замена тега на соответствующее слово в текущем объекте XWPFRun
-                replaceWord(run, run.getText(0), "${", replaceWord);
-                // замена закрывающей скобки в следующем объекте XWPFRun
-                replaceTextAndRemoveBrace(runs.get(i+2), runs.get(i+2).getText(0), "}");
-                // удаление переменной из следующего объекта XWPFRun
-                replaceTextAndRemoveBrace(tagWordRun, tagWordParagraphText, tagWordParagraphText);
-            } else {
-                System.err.println("В файле .docx ошибка: нашлось разбиение по типу \"tag}\"");
+    private int checkTextParagraph(List<XWPFRun> runs, int index, int runsSize){
+        // инициализация флагов для проверки наличия частей тега
+        boolean findDollar = false;
+        boolean findOpenBrace = false;
+        boolean findCloseBrace = false;
+        // строка для хранения текста из нескольких объектов
+        StringBuilder text = new StringBuilder();
+        // новый индекс, который будет возвращен в результате проверки
+        int newIndex = 0;
+        // проход по объектам, начиная с указанного индекса
+        for (int i = index; i < runsSize; i++){
+            String runText = runs.get(i).getText(0);
+            // если текст уже содержит символ $ и текущий объект тоже содержит $,
+            // то добавляем текст к уже собранному и проверяем наличие тега
+            if (text.toString().contains("$") && runText.contains("$")){
+                text.append(runText);
+                // если найден тег, возвращаем индекс текущего объекта
+                if (checkTag(text.toString()))
+                    return newIndex;
+                // если был просто $, а не тег, то сбрасываем флаги и очищаем строку
+                findDollar = false;
+                findOpenBrace = false;
+                findCloseBrace = false;
+                text.setLength(0);
             }
+            if (runText.contains("$")) {
+                findDollar = true;
+                newIndex = i;
+            }
+            if (runText.contains("{"))
+                findOpenBrace = true;
+            if (runText.contains("}"))
+                findCloseBrace = true;
+            text.append(runText);
+            // если найдены все части тега, и тег существует, возвращаем новый индекс
+            if (findDollar && findOpenBrace && findCloseBrace && checkTag(text.toString()))
+                return newIndex;
         }
+        // в абзаце нет тега, выходим из абзаца
+        return index - 1;
     }
 
     /**
-     * Метод replaceVariableSecondCase() заменяет переменную во втором случае разбиения строки,
-     * когда переменная начинается в одном объекте XWPFRun, а заканчивается в другом, с промежуточной '{'.
-     * Начало: $ -> { -> name -> }
-     * Итог: tag -> "" -> "" -> ""
-     * @param paragraph абзац, содержащий объекты XWPFRun, в которых находится переменная.
-     * @param run текущий объект XWPFRun, содержащий начало переменной.
-     * @param tag тег, который требуется заменить.
-     * @param replaceWord слово, на которое нужно заменить тег.
+     * Проверяет наличие тега в тексте.
+     * @param runText текст, в котором производится поиск тега.
+     * @return true, если найден хотя бы один тег, иначе - false.
      */
-    private void replaceVariableSecondCase(XWPFParagraph paragraph, XWPFRun run, String tag, String replaceWord){
-        List<XWPFRun> runs = paragraph.getRuns();
-        // получаем индекс текущего объекта
-        int i = runs.indexOf(run);
-        // получаем следующий объект после текущего
-        XWPFRun nextRun = runs.get(i+1);
-        // получаем текст следующего объекта
-        String nextParagraphText = nextRun.getText(0);
-        // проверка, что следующий объект содержит символ '{'
-        if (nextParagraphText.equals("{")){
-            // получаем объект переменной
-            XWPFRun tagWordRun = runs.get(i+2);
-            // получаем текст
-            String tagWordParagraphText = tagWordRun.getText(0);
-            // проверка, что переменная содержится в объект переменной
-            if (tag.contains(tagWordParagraphText)){
-                // проверка, что переменная не заканчивается в текущем объекте - временно
-                if (!tagWordParagraphText.contains("}")){
-                    // замена тега на соответствующее слово в текущем объекте
-                    replaceWord(run, run.getText(0), "$", replaceWord);
-                    // удаление закрывающей скобки в следующем объекте
-                    replaceTextAndRemoveBrace(runs.get(i+3), runs.get(i+3).getText(0), "}");
-                    // удаление переменной из следующего объекта
-                    replaceTextAndRemoveBrace(tagWordRun, tagWordParagraphText, tagWordParagraphText);
-                    // удаление символа '{' из следующего объекта
-                    replaceTextAndRemoveBrace(nextRun, nextParagraphText, "{");
-                } else {
-                    System.err.println("В файле .docx ошибка: нашлось разбиение по типу \"tag}\"");
-                }
-            }
+    private boolean checkTag(String runText){
+        // проходит по каждой записи в словаре тегов и проверяет их наличие в тексте
+        for(HashMap.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
+            String tag = entry.getKey();
+            if (runText.contains(tag))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Проверяет, содержит ли текст следующего объекта XWPFRun символ "}" и "$".
+     * Если текст содержит оба символа, удаляет символ "}" из объекта XWPFRun
+     * и возвращает его как строку для замены в тексте.
+     * "}, ${" -> ", ${"
+     * @param nextRun следующий объект XWPFRun для проверки.
+     * @param nextRunText текст следующего объекта XWPFRun.
+     * @return строка для замены в тексте
+     */
+    private String checkOptions(XWPFRun nextRun, String nextRunText){
+        if (nextRunText.contains("}") && nextRunText.contains("$")) {
+            deleteWord(nextRun, nextRunText, "}");
+            return "}";
+        } else{
+            deleteWord(nextRun, nextRunText, nextRunText);
+            return nextRunText;
         }
     }
 
     /**
      * Заменяет указанное слово в тексте объекта XWPFRun на другое слово.
      * @param run объект XWPFRun, содержащий текст, который нужно изменить.
-     * @param text текст, который требуется изменить.
-     * @param word слово, которое нужно заменить.
-     * @param replaceWord слово, на которое нужно заменить указанное слово.
      */
-    private void replaceWord(XWPFRun run, String text, String word, String replaceWord){
-        // заменяет указанное слово в тексте на другое слово
-        String updatedText = text.replace(word, replaceWord);
-        // устанавливает обновленный текст в объекте
-        run.setText(updatedText, 0);
+    private void replaceWord(XWPFRun run, StringBuilder text){
+        String runText = String.valueOf(text);
+        for(HashMap.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
+            // получение ключа
+            String tag = entry.getKey();
+            // получение значения
+            String replaceWord = entry.getValue();
+            // замена на тега на его значение
+            if (runText.contains(tag)){
+                String updatedText = runText.replace(tag, replaceWord);
+                run.setText(updatedText, 0);
+            }
+        }
     }
 
     /**
      * Заменяет указанный текст в объекте XWPFRun на пустую строку.
      * @param run объект XWPFRun, содержащий текст, который нужно изменить.
-     * @param text текст, который требуется изменить.
+     * @param runText текст, который требуется изменить.
      * @param toRemove текст, который нужно удалить из исходного текста.
      */
-    private void replaceTextAndRemoveBrace(XWPFRun run, String text, String toRemove) {
+    private void deleteWord(XWPFRun run, String runText, String toRemove) {
         // заменяет указанный текст на пустую строку
-        String updatedText = text.replace(toRemove, "");
+        String updatedText = runText.replace(toRemove, "");
         // устанавливает обновленный текст в объекте
         run.setText(updatedText, 0);
     }

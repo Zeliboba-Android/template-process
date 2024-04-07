@@ -33,6 +33,7 @@ public class Main {
     void replaceTextDoc(){
         // вызов функции заполнения тегов
         fillTags();
+        fillTags();
         // создание экземпляра класса WordDOC
         WordDOC wordDOC = new WordDOC(tagMap);
         try {

@@ -9,7 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
-import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Класс WordDOC предоставляет функционал для изменения содержимого документа типа .doc.
@@ -40,13 +40,7 @@ public class WordDOC {
             // создание объект для работы с .doc
             HWPFDocument doc = new HWPFDocument(fileSystem);
             // замена текста в doc и сохранение изменений
-            for(Map.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
-                // получение ключа
-                String tag = entry.getKey();
-                // получение значения
-                String replaceWord = entry.getValue();
-                doc = replaceText(doc, tag, replaceWord);
-            }
+            doc = replaceText(doc);
             saveFile(newFilePath, doc);
             doc.close();
         }
@@ -55,15 +49,19 @@ public class WordDOC {
     /**
      * Метод replaceText() заменяет текстовые метки в документе на указанные значения.
      * @param doc объект HWPFDocument, представляющий документ типа .doc
-     * @param tag текстовая метка, которую нужно заменить
-     * @param replaceWord значение, на которое нужно заменить текстовую метку
      * @return объект HWPFDocument с замененным текстом
      */
-    private HWPFDocument replaceText(HWPFDocument doc, String tag, String replaceWord){
+    private HWPFDocument replaceText(HWPFDocument doc){
         // диапазон, охватывающий весь текст документа
         Range range = doc.getRange();
-        // замена текста в диапазоне
-        range.replaceText(tag, replaceWord);
+        for(HashMap.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
+            // получение ключа
+            String tag = entry.getKey();
+            // получение значения
+            String replaceWord = entry.getValue();
+            // замена текста в диапазоне
+            range.replaceText(tag, replaceWord);
+        }
         return doc;
     }
 
