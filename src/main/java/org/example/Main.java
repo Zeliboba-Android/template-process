@@ -6,10 +6,13 @@ import java.util.Map;
 
 public class Main {
     private ViewModel viewModel;
-    private static TagMap tagMap;
+    TagMap tagMap;
+    private GenerateFileUsingTable generateFileUsingTable;
 
     Main() {
         viewModel = new ViewModel(this);
+        tagMap = new TagMap();
+        generateFileUsingTable = new GenerateFileUsingTable(tagMap);
         JFrame frame = new JFrame("Main Frame"); // Создаем главное окно
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
         frame.getContentPane().add(viewModel); // Добавляем ViewModel в контейнер главного окна
@@ -29,11 +32,18 @@ public class Main {
         tagMap.getTagMap().put("${decode}", viewModel.getTextFieldDecode());
         tagMap.getTagMap().put("${chief}", viewModel.getTextFieldChief());
     }
+    void chooseFillTag(){
+        if (!viewModel.choose){
+            fillTags();
+        }else {
+            generateFileUsingTable.fillTagsUsingTable();
+        }
+
+    }
 
     void replaceTextDoc(){
         // вызов функции заполнения тегов
-        fillTags();
-        fillTags();
+        chooseFillTag();
         // создание экземпляра класса WordDOC
         WordDOC wordDOC = new WordDOC(tagMap);
         try {
@@ -44,6 +54,7 @@ public class Main {
                 wordDOC.changeFile();
                 System.out.println("Файл .doc успешно изменен");
             } else {
+                System.out.println(tagMap.getTagMap());
                 System.out.println("Не удалось изменить файл .doc Обнаружены пустые значения.");
             }
         } catch (IOException e) {
@@ -54,7 +65,7 @@ public class Main {
     }
 
     void replaceTextDocx(){
-        fillTags();
+        chooseFillTag();
         // создание экземпляра класса WordDOCX
         WordDOCX wordDOCX = new WordDOCX(tagMap);
         try {

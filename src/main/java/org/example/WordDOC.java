@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 /**
@@ -30,7 +31,7 @@ public class WordDOC {
         // извлечение пути к файлу test.doc из ресурсов класспути и сохранение его в переменной filePath
         String fileUrl = getClass().getClassLoader().getResource("test.doc").getPath();
         // декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
-        String filePath = URLDecoder.decode(fileUrl, "UTF-8");
+        String filePath = URLDecoder.decode(fileUrl, StandardCharsets.UTF_8);
         // создаем новый путь к файлу
         String newFilePath = filePath.replace("test.doc", "new_test.doc");
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла

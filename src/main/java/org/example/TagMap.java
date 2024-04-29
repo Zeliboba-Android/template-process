@@ -1,6 +1,7 @@
 package org.example;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Класс TagMap представляет словарь тегов и соответствующих им значений.
@@ -11,16 +12,15 @@ public class TagMap {
     TagMap(){
         tagMap = new HashMap<>();
         // заполнение тегов и их значений по умолчанию
-        tagMap.put("${fio}", "");
-        tagMap.put("${date}", "");
-        tagMap.put("${post}", "");
-        tagMap.put("${company}", "");
-        tagMap.put("${decode}", "");
-        tagMap.put("${chief}", "");
+//        tagMap.put("${fio}"," ");
+//        tagMap.put("${date}"," ");
+//        tagMap.put("${post}"," ");
+//        tagMap.put("${company}"," ");
+//        tagMap.put("${decode}"," ");
+//        tagMap.put("${chief}"," ");
     }
-
     // метод для возврата словаря тегов и их значений
-    public HashMap<String, String> getTagMap(){
+    public Map<String, String> getTagMap(){
         return tagMap;
     }
 }
