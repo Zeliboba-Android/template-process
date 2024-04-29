@@ -28,11 +28,11 @@ public class WordDOCX {
      */
     public void changeFile() throws IOException {
         // извлечение пути к файлу test.doc из ресурсов класспути и сохранение его в переменной filePath
-        String fileUrl = getClass().getClassLoader().getResource("test.docx").getPath();
+        String fileUrl = getClass().getClassLoader().getResource("Заявление РП.docx").getPath();
         // декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
         String filePath = URLDecoder.decode(fileUrl, StandardCharsets.UTF_8);
         // Создаем новый путь к файлу
-        String newFilePath = filePath.replace("test.docx", "new_test.docx");
+        String newFilePath = filePath.replace("Заявление РП.docx", "new_test.docx");
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
         try (InputStream inputStream = new FileInputStream(filePath)){
             // создание объект для работы с .docx
@@ -146,6 +146,8 @@ public class WordDOCX {
         // проход по объектам, начиная с указанного индекса
         for (int i = index; i < runsSize; i++){
             String runText = runs.get(i).getText(0);
+            if (runText == null)
+                continue;
             // если текст уже содержит символ $ и текущий объект тоже содержит $,
             // то добавляем текст к уже собранному и проверяем наличие тега
             if (text.toString().contains("$") && runText.contains("$")){

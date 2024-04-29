@@ -1,6 +1,7 @@
 package org.example;
 
 import java.io.*;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,8 @@ public class GenerateFileUsingTable {
 
         this.tagMap = tagMap;
         // Путь к CSV файлу с данными
-        String csvFilePath = "C:\\Users\\dimas\\IdeaProjects\\template-process\\src\\main\\resources\\testTable.csv";
+        String fileUrl = getClass().getClassLoader().getResource("testTable.csv").getPath();
+        String csvFilePath = URLDecoder.decode(fileUrl, StandardCharsets.UTF_8);
         try (// Укажите правильную кодировку вашего файла CSV
              BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFilePath),"cp1251"));
         ) {
@@ -37,11 +39,9 @@ public class GenerateFileUsingTable {
     }
 
     void fillTagsUsingTable() {
-        tagMap.getTagMap().put("${fio}", dataMap.get("${fio}"));
-        tagMap.getTagMap().put("${date}", dataMap.get("${date}"));
-        tagMap.getTagMap().put("${post}", dataMap.get("${post}"));
-        tagMap.getTagMap().put("${company}", dataMap.get("${company}"));
-        tagMap.getTagMap().put("${decode}", dataMap.get("${decode}"));
-        tagMap.getTagMap().put("${chief}", dataMap.get("${chief}"));
+        for(HashMap.Entry<String, String> entry: dataMap.entrySet()) {
+            String tag = entry.getKey();
+            tagMap.getTagMap().put(tag, dataMap.get(tag));
+        }
     }
 }

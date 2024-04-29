@@ -1,6 +1,7 @@
 package org.example;
 
 import java.io.*;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
@@ -14,9 +15,10 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 public class WorkWithCSV {
     public static void main(String[] args) {
         // Путь к папке с текстовыми документами
-        String folderPath = "C:\\Users\\dimas\\IdeaProjects\\template-process\\src\\main\\resources";
+        String folderPath = WorkWithCSV.class.getClassLoader().getResource("").getPath();
+        folderPath = URLDecoder.decode(folderPath, StandardCharsets.UTF_8);
+        String csvFilePath = folderPath + "testTable.csv";
         // Путь к CSV файлу, в который будем записывать информацию
-        String csvFilePath = "C:\\Users\\dimas\\IdeaProjects\\template-process\\src\\main\\resources\\testTable.csv";
         String regex = "\\$\\{[^}]+\\}";
         Pattern pattern = Pattern.compile(regex);
         // Set для хранения уникальных тегов
@@ -26,7 +28,6 @@ public class WorkWithCSV {
             // Получаем список файлов в указанной папке
             File folder = new File(folderPath);
             File[] files = folder.listFiles();
-
             if (files != null) {
                 // Проходим по каждому файлу
                 for (File file : files) {
