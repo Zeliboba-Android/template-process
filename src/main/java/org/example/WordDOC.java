@@ -4,10 +4,7 @@ import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.usermodel.Range;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -19,31 +16,30 @@ import java.util.HashMap;
  */
 public class WordDOC {
     private final TagMap tagMap;
-    WordDOC(TagMap tagMap){
+    private final ViewModel viewModel;
+    WordDOC(TagMap tagMap, ViewModel viewModel){
         this.tagMap = tagMap;
+        this.viewModel = viewModel;
     }
     /**
      * Метод changeFile() извлекает документ test.doc из ресурсов класспути,
      * заменяет определенные текстовые метки в документе и сохраняет изменения.
      * @throws IOException если возникает ошибка ввода-вывода при чтении или записи файла
      */
-    public void changeFile() throws IOException{
-        // извлечение пути к файлу test.doc из ресурсов класспути и сохранение его в переменной filePath
-        String fileUrl = getClass().getClassLoader().getResource("test.doc").getPath();
-        // декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
-        String filePath = URLDecoder.decode(fileUrl, StandardCharsets.UTF_8);
-        // создаем новый путь к файлу
-        String newFilePath = filePath.replace("test.doc", "new_test.doc");
-        // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
-        // POIFSFileSystem - объект для работы с документом Word
-        try (InputStream inputStream = new FileInputStream(filePath);
-             POIFSFileSystem fileSystem = new POIFSFileSystem(inputStream)){
-            // создание объект для работы с .doc
-            HWPFDocument doc = new HWPFDocument(fileSystem);
-            // замена текста в doc и сохранение изменений
-            doc = replaceText(doc);
-            saveFile(newFilePath, doc);
-            doc.close();
+    public void changeFile(String outputFolderPath) throws IOException{
+        for (File file: viewModel.selectedFiles){
+            String newFilePath = outputFolderPath + File.separator + file.getName();
+            // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
+            // POIFSFileSystem - объект для работы с документом Word
+            try (InputStream inputStream = new FileInputStream(file);
+                 POIFSFileSystem fileSystem = new POIFSFileSystem(inputStream)){
+                // создание объект для работы с .doc
+                HWPFDocument doc = new HWPFDocument(fileSystem);
+                // замена текста в doc и сохранение изменений
+                doc = replaceText(doc);
+                saveFile(newFilePath, doc);
+                doc.close();
+            }
         }
     }
 

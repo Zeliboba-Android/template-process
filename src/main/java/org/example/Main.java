@@ -1,25 +1,49 @@
 package org.example;
 
 import javax.swing.*;
+import java.io.File;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
 public class Main {
     private ViewModel viewModel;
     TagMap tagMap;
     private GenerateFileUsingTable generateFileUsingTable;
-
+    private String outputFolderPath;
     Main() {
         viewModel = new ViewModel(this);
         tagMap = new TagMap();
         generateFileUsingTable = new GenerateFileUsingTable(tagMap);
-        JFrame frame = new JFrame("Main Frame"); // Создаем главное окно
+        JFrame frame = new JFrame("Генерация документов"); // Создаем главное окно
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
         frame.getContentPane().add(viewModel); // Добавляем ViewModel в контейнер главного окна
-        frame.setSize(500,600);
+        frame.setSize(500,700);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true); // Делаем окно видимым
+        createFolder();
+    }
 
+    // Функция создания папки для сохранения файлов с текущей датой и временем
+    private void createFolder() {
+        // Получаем текущую дату и время
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss");
+        String currentDateTime = sdf.format(new Date());
+        String targetFolder = getClass().getClassLoader().getResource("").getPath();
+        targetFolder = URLDecoder.decode(targetFolder, StandardCharsets.UTF_8);
+        outputFolderPath = targetFolder + currentDateTime;
+        // Создаем папку
+        File outputFolder = new File(outputFolderPath);
+        if (!outputFolder.exists()) {
+            if (outputFolder.mkdirs()) {
+                System.out.println("Создана папка для сохранения файлов: " + outputFolder.getAbsolutePath());
+            } else {
+                System.err.println("Не удалось создать папку для сохранения файлов");
+            }
+        }
     }
 
     // функция заполнения значений тегов
@@ -45,13 +69,13 @@ public class Main {
         // вызов функции заполнения тегов
         chooseFillTag();
         // создание экземпляра класса WordDOC
-        WordDOC wordDOC = new WordDOC(tagMap);
+        WordDOC wordDOC = new WordDOC(tagMap, viewModel);
         try {
             // Проверка наличия пустых значений в TagMap
             boolean hasEmptyValues = checkForEmptyValues();
             if (!hasEmptyValues) {
                 // вызов метода изменения файла
-                wordDOC.changeFile();
+                wordDOC.changeFile(outputFolderPath);
                 System.out.println("Файл .doc успешно изменен");
             } else {
                 System.out.println(tagMap.getTagMap());
@@ -67,13 +91,13 @@ public class Main {
     void replaceTextDocx(){
         chooseFillTag();
         // создание экземпляра класса WordDOCX
-        WordDOCX wordDOCX = new WordDOCX(tagMap);
+        WordDOCX wordDOCX = new WordDOCX(tagMap, viewModel);
         try {
             // Проверка наличия пустых значений в TagMap
             boolean hasEmptyValues = checkForEmptyValues();
             if (!hasEmptyValues) {
                 // вызов метода изменения файла
-                wordDOCX.changeFile();
+                wordDOCX.changeFile(outputFolderPath);
                 System.out.println("Файл .docx успешно изменен");
             } else {
                 System.out.println("Не удалось изменить файл .docx Обнаружены пустые значения.");

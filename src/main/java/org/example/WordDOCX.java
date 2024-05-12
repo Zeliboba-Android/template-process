@@ -2,10 +2,7 @@ package org.example;
 
 import org.apache.poi.xwpf.usermodel.*;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -18,29 +15,30 @@ import java.util.HashMap;
  */
 public class WordDOCX {
     private final TagMap tagMap;
-    WordDOCX(TagMap tagMap){
+    private final ViewModel viewModel;
+
+    public WordDOCX(TagMap tagMap, ViewModel viewModel) {
         this.tagMap = tagMap;
+        this.viewModel = viewModel;
     }
 
     /**
      * Метод changeFile() выполняет замену текста в документе и сохранение изменений.
      * @throws IOException если возникают проблемы при чтении или записи файла.
      */
-    public void changeFile() throws IOException {
-        // извлечение пути к файлу test.doc из ресурсов класспути и сохранение его в переменной filePath
-        String fileUrl = getClass().getClassLoader().getResource("Заявление РП.docx").getPath();
-        // декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
-        String filePath = URLDecoder.decode(fileUrl, StandardCharsets.UTF_8);
-        // Создаем новый путь к файлу
-        String newFilePath = filePath.replace("Заявление РП.docx", "new_test.docx");
-        // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
-        try (InputStream inputStream = new FileInputStream(filePath)){
-            // создание объект для работы с .docx
-            XWPFDocument doc = new XWPFDocument(inputStream);
-            // замена текста в docx и сохранение изменений
-            doc = replaceText(doc);
-            saveFile(newFilePath, doc);
-            doc.close();
+    public void changeFile(String outputFolderPath) throws IOException {
+        for (File file: viewModel.selectedFiles){
+            // Создаем новый путь к файлу
+            String newFilePath = outputFolderPath + File.separator + file.getName();
+            // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
+            try (InputStream inputStream = new FileInputStream(file)){
+                // создание объект для работы с .docx
+                XWPFDocument doc = new XWPFDocument(inputStream);
+                // замена текста в docx и сохранение изменений
+                doc = replaceText(doc);
+                saveFile(newFilePath, doc);
+                doc.close();
+            }
         }
     }
 
