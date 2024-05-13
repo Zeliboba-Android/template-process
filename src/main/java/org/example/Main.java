@@ -47,18 +47,18 @@ public class Main {
     }
 
     // функция заполнения значений тегов
-    void fillTags(){
-        tagMap = new TagMap();
-        tagMap.getTagMap().put("${fio}", viewModel.getTextFieldFIO());
-        tagMap.getTagMap().put("${date}", viewModel.getTextFieldDate());
-        tagMap.getTagMap().put("${post}", viewModel.getTextFieldPost());
-        tagMap.getTagMap().put("${company}", viewModel.getTextFieldCompany());
-        tagMap.getTagMap().put("${decode}", viewModel.getTextFieldDecode());
-        tagMap.getTagMap().put("${chief}", viewModel.getTextFieldChief());
-    }
+//    void fillTags(){
+//        tagMap = new TagMap();
+//        tagMap.getTagMap().put("${fio}", viewModel.getTextFieldFIO());
+//        tagMap.getTagMap().put("${date}", viewModel.getTextFieldDate());
+//        tagMap.getTagMap().put("${post}", viewModel.getTextFieldPost());
+//        tagMap.getTagMap().put("${company}", viewModel.getTextFieldCompany());
+//        tagMap.getTagMap().put("${decode}", viewModel.getTextFieldDecode());
+//        tagMap.getTagMap().put("${chief}", viewModel.getTextFieldChief());
+//    }
     void chooseFillTag(){
         if (!viewModel.choose){
-            fillTags();
+//            fillTags();
         }else {
             generateFileUsingTable.fillTagsUsingTable();
         }
