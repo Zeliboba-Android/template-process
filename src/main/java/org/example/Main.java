@@ -1,13 +1,14 @@
 package org.example;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
+import java.util.List;
 
 public class Main {
     private ViewModel viewModel;
@@ -47,18 +48,44 @@ public class Main {
     }
 
     // функция заполнения значений тегов
-//    void fillTags(){
-//        tagMap = new TagMap();
-//        tagMap.getTagMap().put("${fio}", viewModel.getTextFieldFIO());
-//        tagMap.getTagMap().put("${date}", viewModel.getTextFieldDate());
-//        tagMap.getTagMap().put("${post}", viewModel.getTextFieldPost());
-//        tagMap.getTagMap().put("${company}", viewModel.getTextFieldCompany());
-//        tagMap.getTagMap().put("${decode}", viewModel.getTextFieldDecode());
-//        tagMap.getTagMap().put("${chief}", viewModel.getTextFieldChief());
-//    }
+    void fillTags() {
+        TextFieldGenerator textFieldGenerator = viewModel.getTextFieldGenerator();
+        // Получаем список тегов
+        Set<String> tags = textFieldGenerator.getTags();
+
+        // Получаем список всех текстовых полей из ViewModel
+        List<JTextField> textFields = viewModel.findTextFields();
+
+        // Проверяем, что количество текстовых полей соответствует количеству тегов
+        if (textFields.size() != tags.size()) {
+            System.out.println(textFields.size());
+            System.out.println(tags.size());
+            System.out.println("Количество текстовых полей не соответствует количеству тегов.");
+            return; // Возможно, стоит бросить исключение здесь
+        }
+
+        // Очищаем TagMap перед заполнением новыми значениями
+        tagMap = new TagMap();
+
+        // Проходим по всем текстовым полям и соответствующим тегам
+        Iterator<String> tagsIterator = tags.iterator();
+        for (JTextField textField : textFields) {
+            if (tagsIterator.hasNext()) {
+                String tag = tagsIterator.next(); // Получаем текущий тег
+                String value = textField.getText(); // Получаем значение из соответствующего текстового поля
+
+                // Добавляем тег и его значение в TagMap
+                tagMap.getTagMap().put(tag, value);
+            }
+        }
+    }
+
+
+
+
     void chooseFillTag(){
         if (!viewModel.choose){
-//            fillTags();
+            fillTags();
         }else {
             generateFileUsingTable.fillTagsUsingTable();
         }
@@ -122,6 +149,7 @@ public class Main {
         }
         return hasEmptyValues;
     }
+
     public static void main(String[] args) {
         new Main();
     }

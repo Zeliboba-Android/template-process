@@ -1,13 +1,15 @@
 package org.example;
 
 import javax.swing.*;
+import javax.swing.JPanel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.io.File;
-import java.io.FilenameFilter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ViewModel extends JPanel {
     private Main main;
@@ -27,6 +29,10 @@ public class ViewModel extends JPanel {
     private JLabel labelTypeOfDocument;
     private JButton chooseFileButton;
     private JLabel fileLabel;
+
+    public TextFieldGenerator getTextFieldGenerator() {
+        return textFieldGenerator;
+    }
 
     public ViewModel(Main main){
         textFieldGenerator = new TextFieldGenerator(this);
@@ -51,7 +57,7 @@ public class ViewModel extends JPanel {
 
     // создание и добавление необходимых текстовых полей, кнопки или надписей
     public void initializeUI(){
-        fileLabel = new JLabel("Файл(ы) не выбран(ы)!");
+        fileLabel = new JLabel("Файл(ы) не выбран(ы):");
         fileLabel.setBounds(150, 65, 400, 30);
         add(fileLabel);
         chooseFileButton = new JButton("Выбор файлов (doc/docx)");
@@ -59,6 +65,7 @@ public class ViewModel extends JPanel {
         chooseFileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                removeTextFields();
                 FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
                 fileDialog.setMultipleMode(true); // выбор нескольких файлов
                 fileDialog.setVisible(true);
@@ -69,7 +76,7 @@ public class ViewModel extends JPanel {
                         fileLabel.setText(fileLabel.getText() + " " + file.getName() + ";");
                     }
                 }
-                int count = TextFieldGenerator.countTags(selectedFiles);
+                int count = textFieldGenerator.countTags(selectedFiles);
                 textFieldGenerator.generateTextFields(count);
                 System.out.println(count);
 
@@ -167,6 +174,41 @@ public class ViewModel extends JPanel {
             }
         });
     }
+    // Метод для получения всех текстовых полей
+    public List<JTextField> findTextFields() {
+        List<JTextField> textFields = new ArrayList<>();
 
+        // Получаем все компоненты на панели
+        Component[] components = getComponents();
+
+        // Итерируем по всем компонентам
+        for (Component component : components) {
+            // Проверяем, является ли компонент текстовым полем
+            if (component instanceof JTextField) {
+                // Приводим компонент к типу JTextField и добавляем его в список
+                JTextField textField = (JTextField) component;
+                textFields.add(textField);
+            }
+        }
+
+        return textFields;
+    }
+    private void removeTextFields() {
+        // Получаем все компоненты на панели
+        Component[] components = getComponents();
+
+        // Итерируем по всем компонентам
+        for (Component component : components) {
+            // Проверяем, является ли компонент текстовым полем
+            if (component instanceof JTextField) {
+                // Удаляем текстовое поле
+                remove(component);
+            }
+        }
+
+        // Перерисовываем панель после удаления текстовых полей
+        revalidate();
+        repaint();
+    }
 
 }

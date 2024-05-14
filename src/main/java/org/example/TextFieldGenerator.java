@@ -1,23 +1,32 @@
 package org.example;
 
 import org.apache.commons.compress.archivers.dump.InvalidFormatException;
+import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.*;
 
 import javax.swing.*;
 import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TextFieldGenerator {
     private ViewModel viewModel;
+
+    private Set<String> Tags = new HashSet<>();
     public TextFieldGenerator(ViewModel viewModel) {
         this.viewModel = viewModel;
     }
 
-    public static int countTags(File[] files) {
-        Set<String> Tags = new HashSet<>();
+    public int countTags(File[] files) {
+
         String filePath;
+        String regex = "\\$\\{[^}]+\\}";
+        Pattern pattern = Pattern.compile(regex);
         try {
             for (File file: files){
                 filePath = file.getAbsolutePath();
@@ -29,8 +38,44 @@ public class TextFieldGenerator {
                         for (XWPFParagraph paragraph : document.getParagraphs()) {
                             String[] words = paragraph.getText().split("\\s+");
                             for (String word : words) {
-                                if (word != null && (word.contains("${") || word.contains("(S{"))) {
-                                    Tags.add(word);
+                                if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
+                                    // Читаем содержимое файла
+                                    StringBuilder content = new StringBuilder();
+                                    try {
+                                        if (file.getName().endsWith(".doc")) {
+                                            // Для файлов .doc
+                                            FileInputStream fileInputStream = new FileInputStream(file.getAbsolutePath());
+                                            HWPFDocument doc = new HWPFDocument(fileInputStream);
+                                            WordExtractor extractor = new WordExtractor(doc);
+                                            String text = extractor.getText();
+                                            Matcher matcher = pattern.matcher(text);
+                                            while (matcher.find()) {
+                                                String tag = matcher.group();
+                                                if (!Tags.contains(tag)) {
+                                                    Tags.add(tag);
+                                                    System.out.println(tag);
+                                                }
+                                            }
+                                            extractor.close();
+                                        } else if (file.getName().endsWith(".docx")) {
+                                            // Для файлов .docx
+                                            FileInputStream fileInputStream = new FileInputStream(file.getAbsolutePath());
+                                            XWPFDocument doc = new XWPFDocument(fileInputStream);
+                                            XWPFWordExtractor extractor = new XWPFWordExtractor(doc);
+                                            String text = extractor.getText();
+                                            Matcher matcher = pattern.matcher(text);
+                                            while (matcher.find()) {
+                                                String tag = matcher.group();
+                                                if (!Tags.contains(tag)) {
+                                                    Tags.add(tag);
+                                                    System.out.println(tag);
+                                                }
+                                            }
+                                            extractor.close();
+                                        }
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                         }
@@ -43,7 +88,8 @@ public class TextFieldGenerator {
                                 for (XWPFTableCell cell : row.getTableCells()) {
                                     // Получаем текст из ячейки и проверяем наличие тегов
                                     String cellText = cell.getText();
-                                    if (cellText != null && (cellText.contains("${") || cellText.contains("(S{"))) {
+                                    if (cellText != null && cellText.matches("\\$\\{[^}]+\\}")) {
+                                        System.out.println(cellText);
                                         Tags.add(cellText);
                                     }
                                 }
@@ -74,5 +120,8 @@ public class TextFieldGenerator {
         viewModel.revalidate(); // Перерисовываем панель для отображения добавленных компонентов
         viewModel.repaint();
         return textFields;
+    }
+    public Set<String> getTags() {
+        return Tags;
     }
 }
