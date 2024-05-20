@@ -10,43 +10,22 @@ import java.util.List;
 
 public class ViewModelTextFields extends JPanel {
     private Main main;
-    private TextFieldGenerator textFieldGenerator;
-
-
+    private DocumentGenerator documentGenerator;
     private JFrame frame;
-    boolean choose;
     private JButton generateButton;
     public Button buttonBackSpace;
-
     public JButton chooseFileButton;
     public JLabel fileLabel;
     private ViewModelStartScreen viewModelStartScreen;
-    public TextFieldGenerator getTextFieldGenerator() {
-        return textFieldGenerator;
-    }
-
-
-    public ViewModelTextFields(Main main,ViewModelStartScreen viewModelStartScreen) {
+    public ViewModelTextFields(Main main,ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
         this.main = main;
         this.viewModelStartScreen = viewModelStartScreen;
-        textFieldGenerator = new TextFieldGenerator(this);
+        this.documentGenerator = documentGenerator;
         setLayout(null);
         setFocusable(true);
         initializeUI();
     }
 
-
-    public void generateDocument(){
-        if (viewModelStartScreen.radioButtonDOC.isSelected()){
-            main.replaceTextDoc();
-        }
-        else if (viewModelStartScreen.radioButtonDOCX.isSelected()){
-            main.replaceTextDocx();
-        }
-        else {
-            JOptionPane.showMessageDialog(this, "Please select a document type.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
     private void initializeUI() {
         buttonBackSpace = new Button("Назад");
         buttonBackSpace.setBounds(0,0,70,50);
@@ -76,36 +55,53 @@ public class ViewModelTextFields extends JPanel {
                 FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
                 fileDialog.setMultipleMode(true); // выбор нескольких файлов
                 fileDialog.setVisible(true);
-                main.selectedFiles = fileDialog.getFiles();
-                if (main.selectedFiles != null && main.selectedFiles.length > 0) {
+                documentGenerator.selectedFiles = fileDialog.getFiles();
+                if (documentGenerator.selectedFiles != null && documentGenerator.selectedFiles.length > 0) {
                     fileLabel.setText("Выбранные файлы: ");
-                    for (File file : main.selectedFiles) {
+                    for (File file : documentGenerator.selectedFiles) {
                         fileLabel.setText(fileLabel.getText() + " " + file.getName() + ";");
                     }
                 }
-                assert main.selectedFiles != null;
-                int count = textFieldGenerator.countTags(main.selectedFiles);
-                textFieldGenerator.generateTextFields(count);
-                System.out.println(count);
-
+                assert documentGenerator.selectedFiles != null;
+                documentGenerator.createFolder();
+                if (viewModelStartScreen.verification){
+                    int count = documentGenerator.tagExtractor.writeTagsToSet(documentGenerator.selectedFiles).size();
+                    generateTextFields(count);
+                    System.out.println(count);
+                } else {
+                    documentGenerator.tagExtractor.writeTagsToCSV(documentGenerator.selectedFiles,
+                            documentGenerator.outputFolderPath);
+                }
             }
         });
         add(chooseFileButton);
         //создание элемента меню для выбора расширения .doc
         //создание кнопки для генерации документов после заполнения всех полей
-        generateButton = new JButton("Generate document");
+        generateButton = new JButton("Генерация документов");
         generateButton.setBounds(150,490,200,50);
         generateButton.setRolloverEnabled(false);
         generateButton.addActionListener(new ActionListener() {// вызов функции для генерации
             // документов при нажатии на кнопку
             @Override
             public void actionPerformed(ActionEvent e) {
-                choose = false;
-                generateDocument();
+                documentGenerator.generateDocument();
             }
         });
         add(generateButton);
     }
+
+    // Метод для динамической генерации полей тегов
+    public void generateTextFields(int numberOfFields) {
+        JTextField[] textFields = new JTextField[numberOfFields];
+        for (int i = 0; i < numberOfFields; i++) {
+            textFields[i] = new JTextField();
+            textFields[i].setBounds(150, 100 + i * 40, 200, 30);
+            add(textFields[i]);
+        }
+        revalidate(); // Перерисовываем панель для отображения добавленных компонентов
+        repaint();
+    }
+
     // Метод для получения всех текстовых полей
     public java.util.List<JTextField> findTextFields() {
         List<JTextField> textFields = new ArrayList<>();
@@ -141,8 +137,4 @@ public class ViewModelTextFields extends JPanel {
         revalidate();
         repaint();
     }
-    public JFrame getFrame() {
-        return frame;
-    }
-
 }

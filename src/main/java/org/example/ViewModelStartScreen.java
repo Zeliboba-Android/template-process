@@ -8,9 +8,9 @@ import java.awt.event.ActionListener;
 
 public class ViewModelStartScreen extends JPanel {
     private Main main;
+    private DocumentGenerator documentGenerator;
     public ViewModelTextFields viewModelTextFields;
     private ViewModelTable viewModelTable;
-    private JPanel panel;
     private JLabel labelChoosingGenerateMethod;
     private JButton buttonGenerateWithTextFields;
     private JButton buttonGenerateWithTable;
@@ -20,27 +20,17 @@ public class ViewModelStartScreen extends JPanel {
     private JLabel labelTypeOfDocument;
     private JComboBox<Integer> authorComboBox;
     private Font font;
+    boolean verification;
     private int selectedNumber;
-
-    public JFrame getTextFieldsFrameTextFields() {
-        return textFieldsFrameTextFields;
-    }
-
     private JFrame textFieldsFrameTextFields;
-
-    public JFrame getTextFieldsFrameTable() {
-        return textFieldsFrameTable;
-    }
-
     private JFrame textFieldsFrameTable;
-    public ViewModelStartScreen(Main main) {
+    public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator) {
         this.main = main;
-        viewModelTextFields = new ViewModelTextFields(main,this);
-        viewModelTable = new ViewModelTable(main,this);
+        this.documentGenerator = documentGenerator;
+        viewModelTextFields = new ViewModelTextFields(main,this, this.documentGenerator);
+        viewModelTable = new ViewModelTable(main,this, this.documentGenerator);
         initializeStartScreen();
-
     }
-
 
     public void initializeStartScreen(){
         setLayout(null);
@@ -56,15 +46,14 @@ public class ViewModelStartScreen extends JPanel {
         buttonGenerateWithTextFields.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Создаем новое окно JFrame для отображения ViewModelGenerateWithTextFields
                 textFieldsFrameTextFields = new JFrame("Генерация с текстовыми полями");
-                textFieldsFrameTextFields.getContentPane().add(viewModelTextFields); // Добавляем ViewModelGenerateWithTextFields в контейнер окна
+                textFieldsFrameTextFields.getContentPane().add(viewModelTextFields);
                 textFieldsFrameTextFields.setSize(500, 700);
                 textFieldsFrameTextFields.setLocationRelativeTo(null);
                 textFieldsFrameTextFields.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 textFieldsFrameTextFields.setVisible(true);
+                verification = true;
                 main.disposeFrame(main.frame);
-
             }
         });
         add(buttonGenerateWithTextFields);
@@ -79,8 +68,8 @@ public class ViewModelStartScreen extends JPanel {
                 textFieldsFrameTable.setLocationRelativeTo(null);
                 textFieldsFrameTable.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 textFieldsFrameTable.setVisible(true);
+                verification = false;
                 main.disposeFrame(main.frame);
-
             }
         });
         add(buttonGenerateWithTable);
@@ -116,6 +105,13 @@ public class ViewModelStartScreen extends JPanel {
                 selectedNumber = (int) authorComboBox.getSelectedItem();
             }
         });
+    }
 
+    public JFrame getTextFieldsFrameTable() {
+        return textFieldsFrameTable;
+    }
+
+    public JFrame getTextFieldsFrameTextFields() {
+        return textFieldsFrameTextFields;
     }
 }

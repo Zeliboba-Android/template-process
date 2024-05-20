@@ -6,14 +6,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class ViewModelTable extends JPanel {
-    private JButton generateButtonUsingTable;
+    private Main main;
     private ViewModelStartScreen viewModelStartScreen;
+    private DocumentGenerator documentGenerator;
+    private JButton generateButtonUsingTable;
     public Button buttonBackSpace;
     private JFrame frame;
-    private Main main;
 
-    public ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen) {
+    public ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
         this.viewModelStartScreen = viewModelStartScreen;  // Сохраняем переданный экземпляр
+        this.documentGenerator = documentGenerator;
         this.main = main;
         setLayout(null);
         setFocusable(true);
@@ -35,17 +37,15 @@ public class ViewModelTable extends JPanel {
             }
         });
         add(buttonBackSpace);
-        ViewModelTextFields viewModelTextFields = new ViewModelTextFields(main,viewModelStartScreen);
+        ViewModelTextFields viewModelTextFields = new ViewModelTextFields(main, viewModelStartScreen, documentGenerator);
         add(viewModelTextFields.chooseFileButton);
         add(viewModelTextFields.fileLabel);
-
-        generateButtonUsingTable = new JButton("Generate using CSV");
+        generateButtonUsingTable = new JButton("Генерация с помощью таблицы");
         generateButtonUsingTable.setBounds(150,150,200,50);
         generateButtonUsingTable.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                viewModelStartScreen.viewModelTextFields.choose = true;
-                viewModelStartScreen.viewModelTextFields.generateDocument();
+                documentGenerator.generateDocument();
             }
         });
         add(generateButtonUsingTable);

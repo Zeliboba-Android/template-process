@@ -16,10 +16,10 @@ import java.util.HashMap;
  */
 public class WordDOC {
     private final TagMap tagMap;
-    private final Main main;
-    WordDOC(TagMap tagMap, Main main){
+    private File file;
+    WordDOC(TagMap tagMap, File file){
         this.tagMap = tagMap;
-        this.main = main;
+        this.file = file;
     }
     /**
      * Метод changeFile() извлекает документ test.doc из ресурсов класспути,
@@ -27,19 +27,17 @@ public class WordDOC {
      * @throws IOException если возникает ошибка ввода-вывода при чтении или записи файла
      */
     public void changeFile(String outputFolderPath) throws IOException{
-        for (File file: main.selectedFiles){
-            String newFilePath = outputFolderPath + File.separator + file.getName();
-            // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
-            // POIFSFileSystem - объект для работы с документом Word
-            try (InputStream inputStream = new FileInputStream(file);
-                 POIFSFileSystem fileSystem = new POIFSFileSystem(inputStream)){
-                // создание объект для работы с .doc
-                HWPFDocument doc = new HWPFDocument(fileSystem);
-                // замена текста в doc и сохранение изменений
-                doc = replaceText(doc);
-                saveFile(newFilePath, doc);
-                doc.close();
-            }
+        String newFilePath = outputFolderPath + File.separator + file.getName();
+        // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
+        // POIFSFileSystem - объект для работы с документом Word
+        try (InputStream inputStream = new FileInputStream(file);
+             POIFSFileSystem fileSystem = new POIFSFileSystem(inputStream)){
+            // создание объект для работы с .doc
+            HWPFDocument doc = new HWPFDocument(fileSystem);
+            // замена текста в doc и сохранение изменений
+            doc = replaceText(doc);
+            saveFile(newFilePath, doc);
+            doc.close();
         }
     }
 

@@ -15,11 +15,11 @@ import java.util.HashMap;
  */
 public class WordDOCX {
     private final TagMap tagMap;
-    private final Main main;
+    private File file;
 
-    public WordDOCX(TagMap tagMap, Main main) {
+    public WordDOCX(TagMap tagMap, File file) {
         this.tagMap = tagMap;
-        this.main = main;
+        this.file = file;
     }
 
     /**
@@ -27,18 +27,16 @@ public class WordDOCX {
      * @throws IOException если возникают проблемы при чтении или записи файла.
      */
     public void changeFile(String outputFolderPath) throws IOException {
-        for (File file: main.selectedFiles){
-            // Создаем новый путь к файлу
-            String newFilePath = outputFolderPath + File.separator + file.getName();
-            // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
-            try (InputStream inputStream = new FileInputStream(file)){
-                // создание объект для работы с .docx
-                XWPFDocument doc = new XWPFDocument(inputStream);
-                // замена текста в docx и сохранение изменений
-                doc = replaceText(doc);
-                saveFile(newFilePath, doc);
-                doc.close();
-            }
+        // Создаем новый путь к файлу
+        String newFilePath = outputFolderPath + File.separator + file.getName();
+        // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
+        try (InputStream inputStream = new FileInputStream(file)){
+            // создание объект для работы с .docx
+            XWPFDocument doc = new XWPFDocument(inputStream);
+            // замена текста в docx и сохранение изменений
+            doc = replaceText(doc);
+            saveFile(newFilePath, doc);
+            doc.close();
         }
     }
 
