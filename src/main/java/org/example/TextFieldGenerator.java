@@ -15,11 +15,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TextFieldGenerator {
-    private ViewModel viewModel;
+    private ViewModelTextFields viewModelTextFields;
 
     private Set<String> Tags = new HashSet<>();
-    public TextFieldGenerator(ViewModel viewModel) {
-        this.viewModel = viewModel;
+    public TextFieldGenerator(ViewModelTextFields viewModelTextFields) {
+        this.viewModelTextFields = viewModelTextFields;
     }
 
     public int countTags(File[] files) {
@@ -115,10 +115,10 @@ public class TextFieldGenerator {
         for (int i = 0; i < numberOfFields; i++) {
             textFields[i] = new JTextField();
             textFields[i].setBounds(150, 100 + i * 40, 200, 30);
-            viewModel.add(textFields[i]);
+            viewModelTextFields.add(textFields[i]);
         }
-        viewModel.revalidate(); // Перерисовываем панель для отображения добавленных компонентов
-        viewModel.repaint();
+        viewModelTextFields.revalidate(); // Перерисовываем панель для отображения добавленных компонентов
+        viewModelTextFields.repaint();
         return textFields;
     }
     public Set<String> getTags() {

@@ -35,6 +35,7 @@ public class WorkWithCSV {
                     if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
                         // Читаем содержимое файла
                         StringBuilder content = new StringBuilder();
+                        String extra = "";
                         try {
                             if (file.getName().endsWith(".doc")) {
                                 // Для файлов .doc
@@ -46,7 +47,7 @@ public class WorkWithCSV {
                                 while (matcher.find()) {
                                     String tag = matcher.group();
                                     if (!uniqueTags.contains(tag)) {
-                                        writer.println(tag+";");
+                                        writer.println(tag+";" + extra);
                                         uniqueTags.add(tag);
                                     }
                                 }
@@ -61,7 +62,7 @@ public class WorkWithCSV {
                                 while (matcher.find()) {
                                     String tag = matcher.group();
                                     if (!uniqueTags.contains(tag)) {
-                                        writer.println(tag+";");
+                                        writer.println(tag+";"+ extra);
                                         uniqueTags.add(tag);
                                     }
                                 }

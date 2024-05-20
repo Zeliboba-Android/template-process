@@ -11,18 +11,20 @@ import java.util.*;
 import java.util.List;
 
 public class Main {
-    private ViewModel viewModel;
+    public JFrame frame;
+    private ViewModelStartScreen viewModelStartScreen;
     TagMap tagMap;
+    File[] selectedFiles;
     private GenerateFileUsingTable generateFileUsingTable;
     private String outputFolderPath;
     Main() {
-        viewModel = new ViewModel(this);
+        viewModelStartScreen = new ViewModelStartScreen(this);
         tagMap = new TagMap();
         generateFileUsingTable = new GenerateFileUsingTable(tagMap);
-        JFrame frame = new JFrame("Генерация документов"); // Создаем главное окно
+        frame = new JFrame("Генерация документов"); // Создаем главное окно
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
-        frame.getContentPane().add(viewModel); // Добавляем ViewModel в контейнер главного окна
-        frame.setSize(500,700);
+        frame.getContentPane().add(viewModelStartScreen); // Добавляем ViewModel в контейнер главного окна
+        frame.setSize(300,600);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true); // Делаем окно видимым
         createFolder();
@@ -49,12 +51,12 @@ public class Main {
 
     // функция заполнения значений тегов
     void fillTags() {
-        TextFieldGenerator textFieldGenerator = viewModel.getTextFieldGenerator();
+        TextFieldGenerator textFieldGenerator = viewModelStartScreen.viewModelTextFields.getTextFieldGenerator();
         // Получаем список тегов
         Set<String> tags = textFieldGenerator.getTags();
 
         // Получаем список всех текстовых полей из ViewModel
-        List<JTextField> textFields = viewModel.findTextFields();
+        List<JTextField> textFields = viewModelStartScreen.viewModelTextFields.findTextFields();
 
         // Проверяем, что количество текстовых полей соответствует количеству тегов
         if (textFields.size() != tags.size()) {
@@ -84,7 +86,7 @@ public class Main {
 
 
     void chooseFillTag(){
-        if (!viewModel.choose){
+        if (!viewModelStartScreen.viewModelTextFields.choose){
             fillTags();
         }else {
             generateFileUsingTable.fillTagsUsingTable();
@@ -96,7 +98,7 @@ public class Main {
         // вызов функции заполнения тегов
         chooseFillTag();
         // создание экземпляра класса WordDOC
-        WordDOC wordDOC = new WordDOC(tagMap, viewModel);
+        WordDOC wordDOC = new WordDOC(tagMap,this);
         try {
             // Проверка наличия пустых значений в TagMap
             boolean hasEmptyValues = checkForEmptyValues();
@@ -118,7 +120,7 @@ public class Main {
     void replaceTextDocx(){
         chooseFillTag();
         // создание экземпляра класса WordDOCX
-        WordDOCX wordDOCX = new WordDOCX(tagMap, viewModel);
+        WordDOCX wordDOCX = new WordDOCX(tagMap,this);
         try {
             // Проверка наличия пустых значений в TagMap
             boolean hasEmptyValues = checkForEmptyValues();
@@ -148,6 +150,9 @@ public class Main {
             }
         }
         return hasEmptyValues;
+    }
+    void disposeFrame(Frame frame){
+        frame.dispose();
     }
 
     public static void main(String[] args) {

@@ -16,10 +16,10 @@ import java.util.HashMap;
  */
 public class WordDOC {
     private final TagMap tagMap;
-    private final ViewModel viewModel;
-    WordDOC(TagMap tagMap, ViewModel viewModel){
+    private final Main main;
+    WordDOC(TagMap tagMap, Main main){
         this.tagMap = tagMap;
-        this.viewModel = viewModel;
+        this.main = main;
     }
     /**
      * Метод changeFile() извлекает документ test.doc из ресурсов класспути,
@@ -27,7 +27,7 @@ public class WordDOC {
      * @throws IOException если возникает ошибка ввода-вывода при чтении или записи файла
      */
     public void changeFile(String outputFolderPath) throws IOException{
-        for (File file: viewModel.selectedFiles){
+        for (File file: main.selectedFiles){
             String newFilePath = outputFolderPath + File.separator + file.getName();
             // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
             // POIFSFileSystem - объект для работы с документом Word
