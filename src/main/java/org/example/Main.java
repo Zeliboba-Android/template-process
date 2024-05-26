@@ -10,6 +10,9 @@ public class Main {
     Main() {
         documentGenerator = new DocumentGenerator(this);
         viewModelStartScreen = new ViewModelStartScreen(this, documentGenerator);
+        generateFrame();
+    }
+    void generateFrame(){
         frame = new JFrame("Генерация документов"); // Создаем главное окно
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
         frame.getContentPane().add(viewModelStartScreen); // Добавляем ViewModel в контейнер главного окна

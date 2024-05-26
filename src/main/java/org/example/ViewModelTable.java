@@ -10,8 +10,7 @@ public class ViewModelTable extends JPanel {
     private ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
     private JButton generateButtonUsingTable;
-    public Button buttonBackSpace;
-    private JFrame frame;
+    public JButton buttonBackSpace;
 
     public ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
         this.viewModelStartScreen = viewModelStartScreen;  // Сохраняем переданный экземпляр
@@ -22,26 +21,27 @@ public class ViewModelTable extends JPanel {
         initializeTable();
     }
     public void initializeTable(){
-        buttonBackSpace = new Button("Назад");
-        buttonBackSpace.setBounds(0,0,70,50);
+        ViewModelTextFields viewModelTextFields = new ViewModelTextFields(main, viewModelStartScreen, documentGenerator);
+        buttonBackSpace = new JButton();
+        buttonBackSpace.setText("⬅");
+        Font font;
+        font = buttonBackSpace.getFont();
+        buttonBackSpace.setFont(font.deriveFont(Font.PLAIN,32));
+        buttonBackSpace.setBounds(0, 0, 70, 50);
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                frame = new JFrame("Генерация документов"); // Создаем главное окно
-                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
-                frame.getContentPane().add(viewModelStartScreen); // Добавляем ViewModel в контейнер главного окна
-                frame.setSize(300,500);
-                frame.setLocationRelativeTo(null);
-                frame.setVisible(true); // Делаем окно видимым
+                main.generateFrame();
                 main.disposeFrame(viewModelStartScreen.getTextFieldsFrameTable());
+                viewModelTextFields.getFileLabel().setText("Файл(ы) не выбран(ы):");
+
             }
         });
         add(buttonBackSpace);
-        ViewModelTextFields viewModelTextFields = new ViewModelTextFields(main, viewModelStartScreen, documentGenerator);
         add(viewModelTextFields.chooseFileButton);
-        add(viewModelTextFields.fileLabel);
+        add(viewModelTextFields.getFileLabel());
         generateButtonUsingTable = new JButton("Генерация с помощью таблицы");
-        generateButtonUsingTable.setBounds(150,150,200,50);
+        generateButtonUsingTable.setBounds(100,150,200,50);
         generateButtonUsingTable.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

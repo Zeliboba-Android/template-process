@@ -12,12 +12,9 @@ public class ViewModelStartScreen extends JPanel {
     public ViewModelTextFields viewModelTextFields;
     private ViewModelTable viewModelTable;
     private JLabel labelChoosingGenerateMethod;
+    private JLabel labelChooseCountOfAuthor;
     private JButton buttonGenerateWithTextFields;
     private JButton buttonGenerateWithTable;
-    public JRadioButton radioButtonDOC;
-    public JRadioButton radioButtonDOCX;
-    public ButtonGroup documentTypeGroup = new ButtonGroup();
-    private JLabel labelTypeOfDocument;
     private JComboBox<Integer> authorComboBox;
     private Font font;
     boolean verification;
@@ -73,29 +70,18 @@ public class ViewModelStartScreen extends JPanel {
             }
         });
         add(buttonGenerateWithTable);
-        labelTypeOfDocument = new JLabel();
-        labelTypeOfDocument.setBounds(50,240,250,30);
-        labelTypeOfDocument.setText("Выберите тип документа");
-        font = labelTypeOfDocument.getFont();
-        labelTypeOfDocument.setFont(font.deriveFont(Font.BOLD,14));
-        add(labelTypeOfDocument);
-        radioButtonDOC = new JRadioButton(".doc");
-        radioButtonDOC.setBounds(70, 280, 80, 30);
-        add(radioButtonDOC);
-        //создание элемента меню для выбора расширения .docx
-        radioButtonDOCX = new JRadioButton(".docx");
-        radioButtonDOCX.setBounds(150, 280, 100, 30);
-        add(radioButtonDOCX);
-        // Создаем группу для радиобаттонов
-        documentTypeGroup.add(radioButtonDOC);
-        documentTypeGroup.add(radioButtonDOCX);
         // Создаем JComboBox для выбора цифр от 1 до 15
         Integer[] numbers = new Integer[15];
         for (int i = 0; i < 15; i++) {
             numbers[i] = i + 1;
         }
+        labelChooseCountOfAuthor = new JLabel("Выберите количество авторов");
+        labelChooseCountOfAuthor.setBounds(50,250,250,30);
+        font = labelChooseCountOfAuthor.getFont();
+        labelChooseCountOfAuthor.setFont(font.deriveFont(Font.BOLD,14));
+        add(labelChooseCountOfAuthor);
         authorComboBox = new JComboBox<>(numbers);
-        authorComboBox.setBounds(50, 320, 200, 30);
+        authorComboBox.setBounds(50, 280, 200, 30);
         add(authorComboBox);
 
         // Обработка выбора в JComboBox (опционально)
@@ -114,4 +100,5 @@ public class ViewModelStartScreen extends JPanel {
     public JFrame getTextFieldsFrameTextFields() {
         return textFieldsFrameTextFields;
     }
+
 }

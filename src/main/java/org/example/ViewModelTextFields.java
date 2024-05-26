@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,13 +13,16 @@ import java.util.List;
 public class ViewModelTextFields extends JPanel {
     private Main main;
     private DocumentGenerator documentGenerator;
-    private JFrame frame;
     private JButton generateButton;
-    public Button buttonBackSpace;
+    public JButton buttonBackSpace;
     public JButton chooseFileButton;
-    public JLabel fileLabel;
+
+    private JLabel fileLabel;
     private ViewModelStartScreen viewModelStartScreen;
-    public ViewModelTextFields(Main main,ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
+    private JPanel textFieldPanel;
+    private JScrollPane scrollPane;
+
+    public ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
         this.main = main;
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
@@ -27,33 +32,35 @@ public class ViewModelTextFields extends JPanel {
     }
 
     private void initializeUI() {
-        buttonBackSpace = new Button("Назад");
-        buttonBackSpace.setBounds(0,0,70,50);
+        buttonBackSpace = new JButton();
+        buttonBackSpace.setText("⬅");
+        Font font;
+        font = buttonBackSpace.getFont();
+        buttonBackSpace.setFont(font.deriveFont(Font.PLAIN,32));
+        buttonBackSpace.setBounds(0, 0, 70, 50);
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                frame = new JFrame("Генерация документов"); // Создаем главное окно
-                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
-                frame.getContentPane().add(viewModelStartScreen); // Добавляем ViewModel в контейнер главного окна
-                frame.setSize(300,500);
-                frame.setLocationRelativeTo(null);
-                frame.setVisible(true); // Делаем окно видимым
+                main.generateFrame();
                 main.disposeFrame(viewModelStartScreen.getTextFieldsFrameTextFields());
+                fileLabel.setText("Файл(ы) не выбран(ы):");
+                removeTextFields();
             }
         });
         add(buttonBackSpace);
 
         fileLabel = new JLabel("Файл(ы) не выбран(ы):");
-        fileLabel.setBounds(150, 65, 400, 30);
+        fileLabel.setBounds(100, 65, 400, 30);
         add(fileLabel);
+
         chooseFileButton = new JButton("Выбор файлов (doc/docx)");
-        chooseFileButton.setBounds(150, 20, 200, 50);
+        chooseFileButton.setBounds(100, 20, 200, 50);
         chooseFileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 removeTextFields();
                 FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
-                fileDialog.setMultipleMode(true); // выбор нескольких файлов
+                fileDialog.setMultipleMode(true);
                 fileDialog.setVisible(true);
                 documentGenerator.selectedFiles = fileDialog.getFiles();
                 if (documentGenerator.selectedFiles != null && documentGenerator.selectedFiles.length > 0) {
@@ -64,77 +71,105 @@ public class ViewModelTextFields extends JPanel {
                 }
                 assert documentGenerator.selectedFiles != null;
                 documentGenerator.createFolder();
-                if (viewModelStartScreen.verification){
+                if (viewModelStartScreen.verification) {
                     int count = documentGenerator.tagExtractor.writeTagsToSet(documentGenerator.selectedFiles).size();
                     generateTextFields(count);
                     System.out.println(count);
                 } else {
-                    documentGenerator.tagExtractor.writeTagsToCSV(documentGenerator.selectedFiles,
-                            documentGenerator.outputFolderPath);
+                    documentGenerator.tagExtractor.writeTagsToCSV(documentGenerator.selectedFiles, documentGenerator.outputFolderPath);
                 }
             }
         });
         add(chooseFileButton);
-        //создание элемента меню для выбора расширения .doc
-        //создание кнопки для генерации документов после заполнения всех полей
+
         generateButton = new JButton("Генерация документов");
-        generateButton.setBounds(150,490,200,50);
+        generateButton.setBounds(100, 490, 200, 50);
         generateButton.setRolloverEnabled(false);
-        generateButton.addActionListener(new ActionListener() {// вызов функции для генерации
-            // документов при нажатии на кнопку
+        generateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 documentGenerator.generateDocument();
+
             }
         });
         add(generateButton);
+
+        textFieldPanel = new JPanel();
+        textFieldPanel.setLayout(null);
     }
 
-    // Метод для динамической генерации полей тегов
+    // Method for adding placeholder text to a JTextField
+    private void addPlaceholder(JTextField textField, String placeholder) {
+        textField.setText(placeholder);
+        textField.setForeground(Color.GRAY);
+        textField.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getText().equals(placeholder)) {
+                    textField.setText("");
+                    textField.setForeground(Color.BLACK);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textField.getText().isEmpty()) {
+                    textField.setForeground(Color.GRAY);
+                    textField.setText(placeholder);
+                }
+            }
+        });
+    }
+
+    // Method for dynamically generating tag text fields with placeholders
     public void generateTextFields(int numberOfFields) {
+        textFieldPanel.removeAll();
+        scrollPane = new JScrollPane(textFieldPanel);
+        scrollPane.setBounds(100, 100, 300, 360);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        add(scrollPane);
+        textFieldPanel.setPreferredSize(new Dimension(200, numberOfFields * 40));
+
         JTextField[] textFields = new JTextField[numberOfFields];
+        List<String> uniqueTags = new ArrayList<>(documentGenerator.tagExtractor.uniqueTags);
+
         for (int i = 0; i < numberOfFields; i++) {
             textFields[i] = new JTextField();
-            textFields[i].setBounds(150, 100 + i * 40, 200, 30);
-            add(textFields[i]);
+            textFields[i].setBounds(0, i * 40, 270, 30);
+            if (i < uniqueTags.size()) {
+                String tag = uniqueTags.get(i);
+                if (tag.startsWith("${key_ria_")) {
+                    tag = tag.substring(10); // Remove "${key_ria_" prefix
+                }
+                String suffix = "}";
+                if (tag.endsWith(suffix)) {
+                    tag = tag.substring(0, tag.length() - suffix.length()); // Remove suffix
+                }
+                addPlaceholder(textFields[i], tag); // Set placeholder text from the processed tag
+            }
+            textFieldPanel.add(textFields[i]);
         }
-        revalidate(); // Перерисовываем панель для отображения добавленных компонентов
-        repaint();
+        textFieldPanel.revalidate();
+        textFieldPanel.repaint();
     }
 
-    // Метод для получения всех текстовых полей
-    public java.util.List<JTextField> findTextFields() {
+    public List<JTextField> findTextFields() {
         List<JTextField> textFields = new ArrayList<>();
-
-        // Получаем все компоненты на панели
-        Component[] components = getComponents();
-
-        // Итерируем по всем компонентам
+        Component[] components = textFieldPanel.getComponents();
         for (Component component : components) {
-            // Проверяем, является ли компонент текстовым полем
             if (component instanceof JTextField) {
-                // Приводим компонент к типу JTextField и добавляем его в список
-                JTextField textField = (JTextField) component;
-                textFields.add(textField);
+                textFields.add((JTextField) component);
             }
         }
-
         return textFields;
     }
-    private void removeTextFields() {
-        // Получаем все компоненты на панели
-        Component[] components = getComponents();
 
-        // Итерируем по всем компонентам
-        for (Component component : components) {
-            // Проверяем, является ли компонент текстовым полем
-            if (component instanceof JTextField) {
-                // Удаляем текстовое поле
-                remove(component);
-            }
-        }
-        // Перерисовываем панель после удаления текстовых полей
-        revalidate();
-        repaint();
+    private void removeTextFields() {
+        textFieldPanel.removeAll();
+        textFieldPanel.revalidate();
+        textFieldPanel.repaint();
+    }
+    public JLabel getFileLabel() {
+        return fileLabel;
     }
 }
