@@ -26,8 +26,7 @@ public class WordDOC {
      * заменяет определенные текстовые метки в документе и сохраняет изменения.
      * @throws IOException если возникает ошибка ввода-вывода при чтении или записи файла
      */
-    public void changeFile(String outputFolderPath) throws IOException{
-        String newFilePath = outputFolderPath + File.separator + file.getName();
+    public void changeFile(String newFilePath) throws IOException{
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
         // POIFSFileSystem - объект для работы с документом Word
         try (InputStream inputStream = new FileInputStream(file);

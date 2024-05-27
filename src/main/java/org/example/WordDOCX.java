@@ -26,9 +26,7 @@ public class WordDOCX {
      * Метод changeFile() выполняет замену текста в документе и сохранение изменений.
      * @throws IOException если возникают проблемы при чтении или записи файла.
      */
-    public void changeFile(String outputFolderPath) throws IOException {
-        // Создаем новый путь к файлу
-        String newFilePath = outputFolderPath + File.separator + file.getName();
+    public void changeFile(String newFilePath) throws IOException {
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
         try (InputStream inputStream = new FileInputStream(file)){
             // создание объект для работы с .docx

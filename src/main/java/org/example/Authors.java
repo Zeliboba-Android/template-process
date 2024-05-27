@@ -1,6 +1,7 @@
 package org.example;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -16,6 +17,22 @@ public class Authors {
         for (int i = 0; i < countAuthors; i++){
             tagAuthors.add(new TagMap());
         }
+    }
+
+    // Метод для получения тегов первого автора (основной TagMap)
+    public TagMap getMainTagMap() {
+        if (tagAuthors == null || tagAuthors.isEmpty()) {
+            return new TagMap(new HashMap<>());
+        }
+        return tagAuthors.get(0);
+    }
+
+    // Метод для получения тегов автора по индексу
+    public TagMap getTagMapByIndex(int index) {
+        if (tagAuthors == null || tagAuthors.size() <= index) {
+            return new TagMap(new HashMap<>());
+        }
+        return tagAuthors.get(index);
     }
 
     public List<TagMap> getTagMaps() {

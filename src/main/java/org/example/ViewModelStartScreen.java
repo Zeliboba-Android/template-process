@@ -11,7 +11,6 @@ public class ViewModelStartScreen extends JPanel {
     private DocumentGenerator documentGenerator;
     public ViewModelTextFields viewModelTextFields;
     private ViewModelTable viewModelTable;
-    private Authors authors;
     private JLabel labelChoosingGenerateMethod;
     private JLabel labelChooseCountOfAuthor;
     private JButton buttonGenerateWithTextFields;
@@ -90,10 +89,6 @@ public class ViewModelStartScreen extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 selectedNumber = (int) authorComboBox.getSelectedItem();
-                if (selectedNumber > 4){
-                    authors = new Authors(selectedNumber);
-                    documentGenerator.setAuthors(authors);
-                }
             }
         });
     }
