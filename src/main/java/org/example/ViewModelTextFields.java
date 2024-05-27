@@ -121,7 +121,7 @@ public class ViewModelTextFields extends JPanel {
         });
     }
 
-    // Method for dynamically generating tag text fields with placeholders
+    // Способ динамической генерации текстовых полей тегов с заполнителями
     public void generateTextFields(int numberOfFields) {
         textFieldPanel.removeAll();
         scrollPane = new JScrollPane(textFieldPanel);
@@ -139,13 +139,13 @@ public class ViewModelTextFields extends JPanel {
             if (i < uniqueTags.size()) {
                 String tag = uniqueTags.get(i);
                 if (tag.startsWith("${key_ria_")) {
-                    tag = tag.substring(10); // Remove "${key_ria_" prefix
+                    tag = tag.substring(10); // Удалить префикс "${key_ria_"
                 }
                 String suffix = "}";
                 if (tag.endsWith(suffix)) {
-                    tag = tag.substring(0, tag.length() - suffix.length()); // Remove suffix
+                    tag = tag.substring(0, tag.length() - suffix.length()); // Удалить суффикс
                 }
-                addPlaceholder(textFields[i], tag); // Set placeholder text from the processed tag
+                addPlaceholder(textFields[i], tag); // Установите текст-заполнитель из обработанного тега
             }
             textFieldPanel.add(textFields[i]);
         }

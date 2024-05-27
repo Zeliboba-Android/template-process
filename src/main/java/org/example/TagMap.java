@@ -16,4 +16,13 @@ public class TagMap {
     public Map<String, String> getTagMap(){
         return tagMap;
     }
+
+    public void removeTag(String tag) {
+        tagMap.remove(tag);
+    }
+
+    // метод для добавления нового тега и его значения
+    public void addTag(String tag, String value) {
+        tagMap.put(tag, value);
+    }
 }

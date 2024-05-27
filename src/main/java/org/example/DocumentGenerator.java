@@ -14,6 +14,7 @@ import java.util.*;
 public class DocumentGenerator {
     private Main main;
     private GenerateFileUsingTable generateFileUsingTable;
+    private Authors authors;
     TagExtractor tagExtractor;
     TagMap tagMap;
     String outputFolderPath;
@@ -21,7 +22,32 @@ public class DocumentGenerator {
     public DocumentGenerator(Main main) {
         this.main = main;
         tagMap = new TagMap();
-        tagExtractor = new TagExtractor();
+        tagExtractor = new TagExtractor(this.main);
+    }
+
+    public void setAuthors(Authors authors) {
+        this.authors = authors;
+    }
+
+    public void fillAuthorsTags() {
+        if (authors == null || authors.getTagMaps().isEmpty()) {
+            return;
+        }
+        Map<String, String> tagMapCopy = new HashMap<>(tagMap.getTagMap());
+        for (Map.Entry<String, String> entry : tagMapCopy.entrySet()) {
+            String tag = entry.getKey();
+            if (tag.contains("key_ria_author") && tag.matches(".*\\d+.*")) {
+                int authorIndex = extractAuthorIndex(tag);
+                authors.addTagToAuthor(authorIndex, tag, entry.getValue());
+                tagMap.removeTag(tag); // Удаляем тег из tagMap
+            }
+        }
+    }
+
+    private int extractAuthorIndex(String tag) {
+        // Извлечение индекса автора из тега, например, из "key_ria_authorX3" вернет 2 (индексация с 0)
+        String indexStr = tag.replaceAll("\\D+", ""); // Удаляем все нецифровые символы
+        return Integer.parseInt(indexStr) - 1;
     }
 
     // функция заполнения значений тегов
@@ -37,19 +63,16 @@ public class DocumentGenerator {
             System.out.println("Количество текстовых полей не соответствует количеству тегов.");
             return; // Возможно, стоит бросить исключение здесь
         }
-
         // Очищаем TagMap перед заполнением новыми значениями
         tagMap = new TagMap();
-
         // Проходим по всем текстовым полям и соответствующим тегам
         Iterator<String> tagsIterator = tags.iterator();
         for (JTextField textField : textFields) {
             if (tagsIterator.hasNext()) {
                 String tag = tagsIterator.next(); // Получаем текущий тег
                 String value = textField.getText(); // Получаем значение из соответствующего текстового поля
-
                 // Добавляем тег и его значение в TagMap
-                tagMap.getTagMap().put(tag, value);
+                tagMap.addTag(tag, value);
             }
         }
     }
@@ -60,6 +83,9 @@ public class DocumentGenerator {
         }else {
             generateFileUsingTable = new GenerateFileUsingTable(tagMap, outputFolderPath);
             generateFileUsingTable.fillTagsUsingTable();
+        }
+        if (main.viewModelStartScreen.selectedNumber > 4) {
+            fillAuthorsTags();
         }
     }
 

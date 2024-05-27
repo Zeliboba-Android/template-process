@@ -11,6 +11,7 @@ public class ViewModelStartScreen extends JPanel {
     private DocumentGenerator documentGenerator;
     public ViewModelTextFields viewModelTextFields;
     private ViewModelTable viewModelTable;
+    private Authors authors;
     private JLabel labelChoosingGenerateMethod;
     private JLabel labelChooseCountOfAuthor;
     private JButton buttonGenerateWithTextFields;
@@ -18,7 +19,7 @@ public class ViewModelStartScreen extends JPanel {
     private JComboBox<Integer> authorComboBox;
     private Font font;
     boolean verification;
-    private int selectedNumber;
+    int selectedNumber = 1;
     private JFrame textFieldsFrameTextFields;
     private JFrame textFieldsFrameTable;
     public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator) {
@@ -89,6 +90,10 @@ public class ViewModelStartScreen extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 selectedNumber = (int) authorComboBox.getSelectedItem();
+                if (selectedNumber > 4){
+                    authors = new Authors(selectedNumber);
+                    documentGenerator.setAuthors(authors);
+                }
             }
         });
     }

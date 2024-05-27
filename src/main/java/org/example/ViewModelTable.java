@@ -49,6 +49,5 @@ public class ViewModelTable extends JPanel {
             }
         });
         add(generateButtonUsingTable);
-
     }
 }

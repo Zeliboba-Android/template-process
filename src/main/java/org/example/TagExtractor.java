@@ -15,10 +15,15 @@ import java.util.regex.Pattern;
  * @author Денис on 20.05.2024
  */
 public class TagExtractor {
+    private final String regex = "\\$\\{[^}]+\\}";
     Set<String> uniqueTags = new HashSet<>();
+    private Main main;
+    public TagExtractor(Main main) {
+        this.main = main;
+    }
     void writeTagsToCSV(File[] Files, String folderPath) {
+        uniqueTags = new HashSet<>();
         String csvFilePath = folderPath + File.separator + "tags.csv";
-        String regex = "\\$\\{[^}]+\\}";
         Pattern pattern = Pattern.compile(regex);
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(csvFilePath, true), "cp1251")))) {
@@ -40,6 +45,7 @@ public class TagExtractor {
                     }
                 }
             }
+            addCountAuthors(true, writer);
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -48,7 +54,6 @@ public class TagExtractor {
 
     public Set<String> writeTagsToSet(File[] files) {
         uniqueTags = new HashSet<>();
-        String regex = "\\$\\{[^}]+\\}";
         Pattern pattern = Pattern.compile(regex);
         for (File file : files) {
             if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
@@ -67,7 +72,32 @@ public class TagExtractor {
                 }
             }
         }
+        addCountAuthors(false, null);
         return uniqueTags;
+    }
+
+    private void addCountAuthors(boolean useCSV, PrintWriter writer){
+        Set<String> additionTags = new HashSet<>();
+        int countAuthors = main.viewModelStartScreen.selectedNumber;
+        if (countAuthors > 4){
+            for (String tag: uniqueTags){
+                if (tag.contains("key_ria_authorX1")){
+                    additionTags.add(tag);
+                }
+            }
+            for (int i = 4; i <= countAuthors; i++) {
+                for (String tag : additionTags) {
+                    String authorTag = tag.replace("X1", "X" + i); // Заменяем "X1" на текущий индекс автора
+                    if (!uniqueTags.contains(authorTag)) {
+                        uniqueTags.add(authorTag);
+                        if (useCSV && writer != null) {
+                            writer.println(authorTag + ";1");
+                        }
+                        System.out.println(authorTag);
+                    }
+                }
+            }
+        }
     }
 
     private String readTextFromFile(File file) throws IOException {

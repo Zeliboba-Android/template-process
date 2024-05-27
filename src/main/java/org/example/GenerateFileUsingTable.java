@@ -39,7 +39,7 @@ public class GenerateFileUsingTable {
     void fillTagsUsingTable() {
         for(HashMap.Entry<String, String> entry: dataMap.entrySet()) {
             String tag = entry.getKey();
-            tagMap.getTagMap().put(tag, dataMap.get(tag));
+            tagMap.addTag(tag, dataMap.get(tag));
         }
     }
 }
