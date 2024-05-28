@@ -8,7 +8,9 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ViewModelTextFields extends JPanel {
     private Main main;
@@ -21,6 +23,8 @@ public class ViewModelTextFields extends JPanel {
     private ViewModelStartScreen viewModelStartScreen;
     private JPanel textFieldPanel;
     private JScrollPane scrollPane;
+    private JComboBox<String> selectFilesComboBox;
+    Set<String> selectFile = new HashSet<>();
 
     public ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
         this.main = main;
@@ -34,9 +38,8 @@ public class ViewModelTextFields extends JPanel {
     private void initializeUI() {
         buttonBackSpace = new JButton();
         buttonBackSpace.setText("⬅");
-        Font font;
-        font = buttonBackSpace.getFont();
-        buttonBackSpace.setFont(font.deriveFont(Font.PLAIN,32));
+        Font font = buttonBackSpace.getFont();
+        buttonBackSpace.setFont(font.deriveFont(Font.PLAIN, 32));
         buttonBackSpace.setBounds(0, 0, 70, 50);
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
@@ -45,6 +48,7 @@ public class ViewModelTextFields extends JPanel {
                 main.disposeFrame(viewModelStartScreen.getTextFieldsFrameTextFields());
                 fileLabel.setText("Файл(ы) не выбран(ы):");
                 removeTextFields();
+                clearComboBox();
             }
         });
         add(buttonBackSpace);
@@ -65,11 +69,14 @@ public class ViewModelTextFields extends JPanel {
                 documentGenerator.selectedFiles = fileDialog.getFiles();
                 if (documentGenerator.selectedFiles != null && documentGenerator.selectedFiles.length > 0) {
                     fileLabel.setText("Выбранные файлы: ");
-                    for (File file : documentGenerator.selectedFiles) {
-                        fileLabel.setText(fileLabel.getText() + " " + file.getName() + ";");
+                    String[] select = new String[documentGenerator.selectedFiles.length];
+                    for (int i = 0; i < documentGenerator.selectedFiles.length; i++) {
+                        select[i] = documentGenerator.selectedFiles[i].getName();
                     }
+                    updateComboBox(select);
+                } else {
+                    clearComboBox();
                 }
-                assert documentGenerator.selectedFiles != null;
                 documentGenerator.createFolder();
                 if (viewModelStartScreen.verification) {
                     int count = documentGenerator.tagExtractor.writeTagsToSet(documentGenerator.selectedFiles).size();
@@ -89,16 +96,40 @@ public class ViewModelTextFields extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 documentGenerator.generateDocument();
-
             }
         });
         add(generateButton);
 
         textFieldPanel = new JPanel();
         textFieldPanel.setLayout(null);
+
+        scrollPane = new JScrollPane(textFieldPanel);
+        scrollPane.setBounds(100, 125, 300, 360);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        add(scrollPane);
     }
 
-    // Method for adding placeholder text to a JTextField
+    private void updateComboBox(String[] select) {
+        if (selectFilesComboBox != null) {
+            remove(selectFilesComboBox);
+        }
+        selectFilesComboBox = new JComboBox<>(select);
+        selectFilesComboBox.setBounds(100, 100, 300, 20);
+        add(selectFilesComboBox);
+        revalidate();
+        repaint();
+    }
+
+    private void clearComboBox() {
+        if (selectFilesComboBox != null) {
+            remove(selectFilesComboBox);
+            selectFilesComboBox = null;
+        }
+        revalidate();
+        repaint();
+    }
+
+    // метод для добавления подсказок в текстовые поля
     private void addPlaceholder(JTextField textField, String placeholder) {
         textField.setText(placeholder);
         textField.setForeground(Color.GRAY);
@@ -124,10 +155,6 @@ public class ViewModelTextFields extends JPanel {
     // Способ динамической генерации текстовых полей тегов с заполнителями
     public void generateTextFields(int numberOfFields) {
         textFieldPanel.removeAll();
-        scrollPane = new JScrollPane(textFieldPanel);
-        scrollPane.setBounds(100, 100, 300, 360);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        add(scrollPane);
         textFieldPanel.setPreferredSize(new Dimension(200, numberOfFields * 40));
 
         JTextField[] textFields = new JTextField[numberOfFields];
@@ -151,6 +178,8 @@ public class ViewModelTextFields extends JPanel {
         }
         textFieldPanel.revalidate();
         textFieldPanel.repaint();
+        scrollPane.revalidate();
+        scrollPane.repaint();
     }
 
     public List<JTextField> findTextFields() {
@@ -168,7 +197,10 @@ public class ViewModelTextFields extends JPanel {
         textFieldPanel.removeAll();
         textFieldPanel.revalidate();
         textFieldPanel.repaint();
+        scrollPane.revalidate();
+        scrollPane.repaint();
     }
+
     public JLabel getFileLabel() {
         return fileLabel;
     }
