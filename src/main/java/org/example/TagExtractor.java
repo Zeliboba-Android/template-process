@@ -85,7 +85,7 @@ public class TagExtractor {
                     additionTags.add(tag);
                 }
             }
-            for (int i = 4; i <= countAuthors; i++) {
+            for (int i = 1; i <= countAuthors; i++) {
                 for (String tag : additionTags) {
                     String authorTag = tag.replace("X1", "X" + i); // Заменяем "X1" на текущий индекс автора
                     if (!uniqueTags.contains(authorTag)) {

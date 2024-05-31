@@ -219,10 +219,24 @@ public class WordDOCX {
             String replaceWord = entry.getValue();
             // замена на тега на его значение
             if (runText.contains(tag)){
-                String updatedText = runText.replace(tag, replaceWord);
-                run.setText(updatedText, 0);
+                if (tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}")) {
+                    String updatedText = runText.replace(tag, getCheckboxSymbol(replaceWord));
+                    run.setText(updatedText, 0);
+                } else {
+                    String updatedText = runText.replace(tag, replaceWord);
+                    run.setText(updatedText, 0);
+                }
             }
         }
+    }
+
+    /**
+     * Возвращает символ для флажка.
+     * @param value значение тега, если 1 - крестик, если 0 - пустой.
+     * @return символ для флажка.
+     */
+    private String getCheckboxSymbol(String value) {
+        return value.equals("1") ? "☒" : "☐";
     }
 
     /**
