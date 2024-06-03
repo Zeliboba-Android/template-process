@@ -6,11 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Set;
 
 public class ViewModelTextFields extends JPanel {
     private Main main;
@@ -19,19 +16,26 @@ public class ViewModelTextFields extends JPanel {
     public JButton buttonBackSpace;
     public JButton chooseFileButton;
 
-    private JLabel fileLabel;
+    private JLabel chooseFileLabel;
     private ViewModelStartScreen viewModelStartScreen;
     private JPanel textFieldPanel;
     private JScrollPane scrollPane;
+    private JScrollPane scrollPaneButton;
     private JComboBox<String> selectFilesComboBox;
-    Set<String> selectFile = new HashSet<>();
+    private ViewModelTable viewModelTable;
+    private JPanel buttonPanel;
+    private HashMap<String, List<String>> fileTagMap;
 
-    public ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
+    private Map<String, String> tagValuesMap; // Map to store tag values
+
+    public ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable) {
         this.main = main;
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
+        this.viewModelTable = viewModelTable;
         setLayout(null);
         setFocusable(true);
+        tagValuesMap = new HashMap<>(); // Initialize the map
         initializeUI();
     }
 
@@ -46,19 +50,20 @@ public class ViewModelTextFields extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 main.generateFrame();
                 main.disposeFrame(viewModelStartScreen.getTextFieldsFrameTextFields());
-                fileLabel.setText("Файл(ы) не выбран(ы):");
                 removeTextFields();
-                clearComboBox();
+                buttonPanel.removeAll();
+                chooseFileLabel.setText("");
             }
         });
         add(buttonBackSpace);
 
-        fileLabel = new JLabel("Файл(ы) не выбран(ы):");
-        fileLabel.setBounds(100, 65, 400, 30);
-        add(fileLabel);
+        chooseFileLabel = new JLabel("Файлы не выбраны");
+        chooseFileLabel.setBounds(300,85,400,30);
+        add(chooseFileLabel);
+
 
         chooseFileButton = new JButton("Выбор файлов (doc/docx)");
-        chooseFileButton.setBounds(100, 20, 200, 50);
+        chooseFileButton.setBounds(300, 40, 200, 50);
         chooseFileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -68,29 +73,35 @@ public class ViewModelTextFields extends JPanel {
                 fileDialog.setVisible(true);
                 documentGenerator.selectedFiles = fileDialog.getFiles();
                 if (documentGenerator.selectedFiles != null && documentGenerator.selectedFiles.length > 0) {
-                    fileLabel.setText("Выбранные файлы: ");
-                    String[] select = new String[documentGenerator.selectedFiles.length];
+                    chooseFileLabel.setText("Выбранные файлы: ");
+                    viewModelStartScreen.select = new String[documentGenerator.selectedFiles.length];
                     for (int i = 0; i < documentGenerator.selectedFiles.length; i++) {
-                        select[i] = documentGenerator.selectedFiles[i].getName();
+                        viewModelStartScreen.select[i] = documentGenerator.selectedFiles[i].getName();
                     }
-                    updateComboBox(select);
-                } else {
-                    clearComboBox();
+
+                    // Update combo box in ViewModelTable
+                    if (viewModelTable != null) {
+                        viewModelTable.clearComboBox();
+                        viewModelTable.updateComboBox(viewModelStartScreen.select);
+                        viewModelTable.getFileLabel().setText("Выбранные файлы: ");
+                    }
                 }
                 documentGenerator.createFolder();
                 if (viewModelStartScreen.verification) {
-                    int count = documentGenerator.tagExtractor.writeTagsToSet(documentGenerator.selectedFiles).size();
-                    generateTextFields(count);
-                    System.out.println(count);
+                    fileTagMap = documentGenerator.tagExtractor.writeTagsToMap(documentGenerator.selectedFiles);
+                    generateFileButtons(fileTagMap);
+                    generateTextFields(getAllTags(fileTagMap));
                 } else {
                     documentGenerator.tagExtractor.writeTagsToCSV(documentGenerator.selectedFiles, documentGenerator.outputFolderPath);
                 }
             }
+
         });
+
         add(chooseFileButton);
 
         generateButton = new JButton("Генерация документов");
-        generateButton.setBounds(100, 490, 200, 50);
+        generateButton.setBounds(300, 500, 200, 50);
         generateButton.setRolloverEnabled(false);
         generateButton.addActionListener(new ActionListener() {
             @Override
@@ -104,29 +115,17 @@ public class ViewModelTextFields extends JPanel {
         textFieldPanel.setLayout(null);
 
         scrollPane = new JScrollPane(textFieldPanel);
-        scrollPane.setBounds(100, 125, 300, 360);
+        scrollPane.setBounds(70, 125, 300, 360);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         add(scrollPane);
-    }
 
-    private void updateComboBox(String[] select) {
-        if (selectFilesComboBox != null) {
-            remove(selectFilesComboBox);
-        }
-        selectFilesComboBox = new JComboBox<>(select);
-        selectFilesComboBox.setBounds(100, 100, 300, 20);
-        add(selectFilesComboBox);
-        revalidate();
-        repaint();
-    }
+        buttonPanel = new JPanel();
+        add(buttonPanel);
 
-    private void clearComboBox() {
-        if (selectFilesComboBox != null) {
-            remove(selectFilesComboBox);
-            selectFilesComboBox = null;
-        }
-        revalidate();
-        repaint();
+        scrollPaneButton = new JScrollPane(buttonPanel);
+        scrollPaneButton.setBounds(450,125,300,360);
+        scrollPaneButton.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        add(scrollPaneButton);
     }
 
     // метод для добавления подсказок в текстовые поля
@@ -147,32 +146,38 @@ public class ViewModelTextFields extends JPanel {
                 if (textField.getText().isEmpty()) {
                     textField.setForeground(Color.GRAY);
                     textField.setText(placeholder);
+                } else {
+                    // Save the value to the map when the text field loses focus
+                    tagValuesMap.put(placeholder, textField.getText());
                 }
             }
         });
     }
 
     // Способ динамической генерации текстовых полей тегов с заполнителями
-    public void generateTextFields(int numberOfFields) {
+    public void generateTextFields(List<String> tags) {
         textFieldPanel.removeAll();
-        textFieldPanel.setPreferredSize(new Dimension(200, numberOfFields * 40));
+        textFieldPanel.setPreferredSize(new Dimension(200, tags.size() * 40));
 
-        JTextField[] textFields = new JTextField[numberOfFields];
-        List<String> uniqueTags = new ArrayList<>(documentGenerator.tagExtractor.uniqueTags);
+        JTextField[] textFields = new JTextField[tags.size()];
 
-        for (int i = 0; i < numberOfFields; i++) {
+        for (int i = 0; i < tags.size(); i++) {
             textFields[i] = new JTextField();
             textFields[i].setBounds(0, i * 40, 270, 30);
-            if (i < uniqueTags.size()) {
-                String tag = uniqueTags.get(i);
-                if (tag.startsWith("${key_ria_")) {
-                    tag = tag.substring(10); // Удалить префикс "${key_ria_"
-                }
-                String suffix = "}";
-                if (tag.endsWith(suffix)) {
-                    tag = tag.substring(0, tag.length() - suffix.length()); // Удалить суффикс
-                }
-                addPlaceholder(textFields[i], tag); // Установите текст-заполнитель из обработанного тега
+            String tag = tags.get(i);
+            if (tag.startsWith("${key_ria_")) {
+                tag = tag.substring(10); // Удалить префикс "${key_ria_"
+            }
+            String suffix = "}";
+            if (tag.endsWith(suffix)) {
+                tag = tag.substring(0, tag.length() - suffix.length()); // Удалить суффикс
+            }
+            addPlaceholder(textFields[i], tag); // Установите текст-заполнитель из обработанного тега
+
+            // Set the text field value if it exists in the map
+            if (tagValuesMap.containsKey(tag)) {
+                textFields[i].setText(tagValuesMap.get(tag));
+                textFields[i].setForeground(Color.BLACK);
             }
             textFieldPanel.add(textFields[i]);
         }
@@ -201,7 +206,61 @@ public class ViewModelTextFields extends JPanel {
         scrollPane.repaint();
     }
 
-    public JLabel getFileLabel() {
-        return fileLabel;
+
+
+    public void generateFileButtons(HashMap<String, List<String>> fileTagMap) {
+        buttonPanel.removeAll();
+        chooseFileLabel.setText("Выбранные файлы: Показать все теги");
+
+        // Add "Show All Tags" button
+        JButton showAllTagsButton = new JButton("Показать все теги");
+        showAllTagsButton.setPreferredSize(new Dimension(250, 30));
+        showAllTagsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generateTextFields(getAllTags(fileTagMap));
+                chooseFileLabel.setText("Выбранный файл: " + showAllTagsButton.getText());
+            }
+        });
+        if (documentGenerator.selectedFiles.length != 0)
+            buttonPanel.add(showAllTagsButton);
+
+        // Add file-specific buttons
+        int yOffset = 40; // Initial Y position for file buttons
+        for (String fileName : fileTagMap.keySet()) {
+            JButton fileButton = new JButton(fileName);
+            fileButton.setPreferredSize(new Dimension(250, 35)); // Set fixed size
+            fileButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    chooseFileLabel.setText("Выбранный файл: " + fileName); // Set the file name in the fileLabel
+                    List<String> tags = fileTagMap.get(fileName);
+                    generateTextFields(tags);
+                }
+            });
+            buttonPanel.add(fileButton);
+            yOffset += 40; // Increment Y position for the next button
+        }
+
+        // Calculate the total height needed for all buttons
+        int totalHeight = yOffset;
+
+        // Set the preferred size of buttonPanel to accommodate all buttons
+        buttonPanel.setPreferredSize(new Dimension(200, totalHeight));
+
+        // Revalidate and repaint buttonPanel
+        buttonPanel.revalidate();
+        buttonPanel.repaint();
+    }
+
+
+
+
+    private List<String> getAllTags(HashMap<String, List<String>> fileTagMap) {
+        Set<String> allTags = new HashSet<>();
+        for (List<String> tags : fileTagMap.values()) {
+            allTags.addAll(tags);
+        }
+        return new ArrayList<>(allTags);
     }
 }

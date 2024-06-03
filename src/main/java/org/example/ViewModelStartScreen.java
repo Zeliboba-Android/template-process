@@ -21,10 +21,11 @@ public class ViewModelStartScreen extends JPanel {
     int selectedNumber = 1;
     private JFrame textFieldsFrameTextFields;
     private JFrame textFieldsFrameTable;
+    String[] select;
     public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator) {
         this.main = main;
         this.documentGenerator = documentGenerator;
-        viewModelTextFields = new ViewModelTextFields(main,this, this.documentGenerator);
+        viewModelTextFields = new ViewModelTextFields(main,this, this.documentGenerator,viewModelTable);
         viewModelTable = new ViewModelTable(main,this, this.documentGenerator);
         initializeStartScreen();
     }
@@ -45,7 +46,7 @@ public class ViewModelStartScreen extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 textFieldsFrameTextFields = new JFrame("Генерация с текстовыми полями");
                 textFieldsFrameTextFields.getContentPane().add(viewModelTextFields);
-                textFieldsFrameTextFields.setSize(500, 700);
+                textFieldsFrameTextFields.setSize(830, 700);
                 textFieldsFrameTextFields.setLocationRelativeTo(null);
                 textFieldsFrameTextFields.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 textFieldsFrameTextFields.setVisible(true);

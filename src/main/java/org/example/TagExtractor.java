@@ -6,8 +6,7 @@ import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
 import java.io.*;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,10 +15,16 @@ import java.util.regex.Pattern;
  */
 public class TagExtractor {
     private final String regex = "\\$\\{[^}]+\\}";
+    private Pattern pattern;
     Set<String> uniqueTags = new HashSet<>();
+    HashMap<String, List<String>> fileTagMap = new HashMap<>();
+
+
     private Main main;
     public TagExtractor(Main main) {
         this.main = main;
+        this.pattern = Pattern.compile(regex);
+
     }
     void writeTagsToCSV(File[] Files, String folderPath) {
         uniqueTags = new HashSet<>();
@@ -63,7 +68,7 @@ public class TagExtractor {
                     while (matcher.find()) {
                         String tag = matcher.group();
                         if (!uniqueTags.contains(tag)) {
-                            System.out.println(tag);
+//                            System.out.println(tag);
                             uniqueTags.add(tag);
                         }
                     }
@@ -74,6 +79,33 @@ public class TagExtractor {
         }
         addCountAuthors(false, null);
         return uniqueTags;
+    }
+    public HashMap<String, List<String>> writeTagsToMap(File[] files) {
+        fileTagMap = new HashMap<>();
+        uniqueTags = writeTagsToSet(files);
+        for (File file : files) {
+            if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
+                try {
+                    String text = readTextFromFile(file);
+                    Matcher matcher = pattern.matcher(text);
+                    while (matcher.find()) {
+                        String tag = matcher.group();
+                        if (!fileTagMap.containsKey(file.getName())) {
+                            fileTagMap.put(file.getName(), new ArrayList<>());
+                        }
+                        List<String> tags = fileTagMap.get(file.getName());
+                        if (!tags.contains(tag)) {
+                            System.out.println(tag);
+                            tags.add(tag);
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        addCountAuthors(false, null);
+        return fileTagMap;
     }
 
     private void addCountAuthors(boolean useCSV, PrintWriter writer){
