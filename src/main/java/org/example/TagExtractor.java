@@ -81,6 +81,7 @@ public class TagExtractor {
         addCountAuthors(false, null);
         return uniqueTags;
     }
+    //работает теперь
     public HashMap<String, List<String>> writeTagsToMap(File[] files) {
         fileTagMap = new HashMap<>();
         uniqueTags = writeTagsToSet(files);
