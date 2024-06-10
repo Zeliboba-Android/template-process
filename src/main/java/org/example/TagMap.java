@@ -9,18 +9,28 @@ import java.util.Map;
  */
 public class TagMap {
     private HashMap<String, String> tagMap;
-    TagMap(){
+    public TagMap(){
         tagMap = new HashMap<>();
-        // заполнение тегов и их значений по умолчанию
-//        tagMap.put("${fio}"," ");
-//        tagMap.put("${date}"," ");
-//        tagMap.put("${post}"," ");
-//        tagMap.put("${company}"," ");
-//        tagMap.put("${decode}"," ");
-//        tagMap.put("${chief}"," ");
+    }
+    public TagMap(HashMap<String, String> tagMap) {
+        this.tagMap = tagMap;
     }
     // метод для возврата словаря тегов и их значений
     public Map<String, String> getTagMap(){
         return tagMap;
+    }
+
+    public void removeTag(String tag) {
+        tagMap.remove(tag);
+    }
+
+    // метод для добавления нового тега и его значения
+    public void addTag(String tag, String value) {
+        tagMap.put(tag, value);
+    }
+
+    // метод для объединения двух TagMap
+    public void combineTags(TagMap other) {
+        this.tagMap.putAll(other.getTagMap());
     }
 }

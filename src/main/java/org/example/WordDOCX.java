@@ -2,10 +2,7 @@ package org.example;
 
 import org.apache.poi.xwpf.usermodel.*;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -18,23 +15,20 @@ import java.util.HashMap;
  */
 public class WordDOCX {
     private final TagMap tagMap;
-    WordDOCX(TagMap tagMap){
+    private File file;
+
+    public WordDOCX(TagMap tagMap, File file) {
         this.tagMap = tagMap;
+        this.file = file;
     }
 
     /**
      * Метод changeFile() выполняет замену текста в документе и сохранение изменений.
      * @throws IOException если возникают проблемы при чтении или записи файла.
      */
-    public void changeFile() throws IOException {
-        // извлечение пути к файлу test.doc из ресурсов класспути и сохранение его в переменной filePath
-        String fileUrl = getClass().getClassLoader().getResource("Заявление РП.docx").getPath();
-        // декодируем путь к файлу, чтобы обработать специальные символы, такие как пробелы или кириллические символы
-        String filePath = URLDecoder.decode(fileUrl, StandardCharsets.UTF_8);
-        // Создаем новый путь к файлу
-        String newFilePath = filePath.replace("Заявление РП.docx", "new_test.docx");
+    public void changeFile(String newFilePath) throws IOException {
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
-        try (InputStream inputStream = new FileInputStream(filePath)){
+        try (InputStream inputStream = new FileInputStream(file)){
             // создание объект для работы с .docx
             XWPFDocument doc = new XWPFDocument(inputStream);
             // замена текста в docx и сохранение изменений
@@ -225,10 +219,24 @@ public class WordDOCX {
             String replaceWord = entry.getValue();
             // замена на тега на его значение
             if (runText.contains(tag)){
-                String updatedText = runText.replace(tag, replaceWord);
-                run.setText(updatedText, 0);
+                if (tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}")) {
+                    String updatedText = runText.replace(tag, getCheckboxSymbol(replaceWord));
+                    run.setText(updatedText, 0);
+                } else {
+                    String updatedText = runText.replace(tag, replaceWord);
+                    run.setText(updatedText, 0);
+                }
             }
         }
+    }
+
+    /**
+     * Возвращает символ для флажка.
+     * @param value значение тега, если 1 - крестик, если 0 - пустой.
+     * @return символ для флажка.
+     */
+    private String getCheckboxSymbol(String value) {
+        return value.equals("1") ? "☒" : "☐";
     }
 
     /**
