@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 public class TagExtractor {
     private final String regex = "\\$\\{[^}]+\\}";
     private Pattern pattern;
+    List<String> tags = new ArrayList<>();
     Set<String> uniqueTags = new HashSet<>();
     HashMap<String, List<String>> fileTagMap = new HashMap<>();
 
@@ -93,9 +94,14 @@ public class TagExtractor {
                         if (!fileTagMap.containsKey(file.getName())) {
                             fileTagMap.put(file.getName(), new ArrayList<>());
                         }
-                        List<String> tags = fileTagMap.get(file.getName());
+                        tags = fileTagMap.get(file.getName());
                         if (!tags.contains(tag)) {
-                            System.out.println(tag);
+                            tags.add(tag);
+                        }
+                    }
+                    // Add remaining uniqueTags to fileTagMap for this file
+                    for (String tag : uniqueTags) {
+                        if (!tags.contains(tag)) {
                             tags.add(tag);
                         }
                     }
@@ -105,8 +111,11 @@ public class TagExtractor {
             }
         }
         addCountAuthors(false, null);
+        System.out.println("--------------------------------------------------------");
+        System.out.println(fileTagMap);
         return fileTagMap;
     }
+
 
     private void addCountAuthors(boolean useCSV, PrintWriter writer){
         Set<String> additionTags = new HashSet<>();
