@@ -1,4 +1,8 @@
-package org.example;
+package org.example.view;
+
+import org.example.controller.DocumentGenerator;
+import org.example.main.Main;
+import org.example.model.TagDatabase;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -15,7 +19,6 @@ public class ViewModelTextFields extends JPanel {
     public JButton buttonBackSpace;
     public JButton chooseFileButton;
     private JButton showAllTagsButton;
-
     private JLabel chooseFileLabel;
     private ViewModelStartScreen viewModelStartScreen;
     private JPanel textFieldPanel;
@@ -24,13 +27,10 @@ public class ViewModelTextFields extends JPanel {
     private ViewModelTable viewModelTable;
     private JPanel buttonPanel;
     private HashMap<String, List<String>> fileTagMap;
-
     private Map<String, String> tagValuesMap; // Map to store tag values
     private TagDatabase tagDatabase; // Database instance
 
-
-
-    public ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable) {
+    ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable) {
         this.main = main;
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
@@ -101,8 +101,6 @@ public class ViewModelTextFields extends JPanel {
         generateButton.setEnabled(areAllTextFieldsFilled()); // Активируем или деактивируем кнопку
         generateButton.setFocusable(areAllTextFieldsFilled());
     }
-
-
 
     private void initializeUI() {
         buttonBackSpace = new JButton();
@@ -255,7 +253,7 @@ public class ViewModelTextFields extends JPanel {
 
 
     // Способ динамической генерации текстовых полей тегов с заполнителями
-    public void generateTextFields(List<String> tags) {
+    private void generateTextFields(List<String> tags) {
         textFieldPanel.removeAll();
         int padding = 10; // Отступы по бокам
         int topPadding = 10; // Отступ сверху для первого элемента
@@ -323,7 +321,7 @@ public class ViewModelTextFields extends JPanel {
 
 
 
-    public void generateFileButtons(HashMap<String, List<String>> fileTagMap) {
+    private void generateFileButtons(HashMap<String, List<String>> fileTagMap) {
         buttonPanel.removeAll();
         chooseFileLabel.setText("Выбранные файлы: Показать все теги");
 

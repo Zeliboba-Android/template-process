@@ -1,4 +1,7 @@
-package org.example;
+package org.example.view;
+
+import org.example.controller.DocumentGenerator;
+import org.example.main.Main;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,18 +13,16 @@ public class ViewModelTable extends JPanel {
     private ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
     private JButton generateButtonUsingTable;
-    public JButton buttonBackSpace;
+    private JButton buttonBackSpace;
     private JComboBox<String> selectFilesForTableComboBox;
     private ViewModelTextFields viewModelTextFields;
     private JLabel fileLabel;
-
     // Константы для одинакового размера компонентов
     private static final Dimension COMPONENT_SIZE = new Dimension(300, 50);
-
     // Добавляем contentPanel на уровне класса
     private JPanel contentPanel;
 
-    public ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
+    ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
         this.main = main;
@@ -32,7 +33,7 @@ public class ViewModelTable extends JPanel {
         initializeTable();  // Убедимся, что initializeTable вызывается в конструкторе
     }
 
-    public void initializeTable() {
+    private void initializeTable() {
         // Панель для кнопки BackSpace, размещенной в верхнем левом углу
         JPanel backButtonPanel = new JPanel();
         backButtonPanel.setLayout(new BorderLayout());
@@ -91,7 +92,7 @@ public class ViewModelTable extends JPanel {
         add(contentPanel, BorderLayout.CENTER); // Добавляем панель с остальными компонентами в центр
     }
 
-    public void updateComboBox(String[] select) {
+    void updateComboBox(String[] select) {
         if (selectFilesForTableComboBox != null) {
             contentPanel.remove(selectFilesForTableComboBox);  // Удаляем старый JComboBox из contentPanel
         }
@@ -113,7 +114,7 @@ public class ViewModelTable extends JPanel {
         contentPanel.repaint();
     }
 
-    public void clearComboBox() {
+    void clearComboBox() {
         if (selectFilesForTableComboBox != null) {
             contentPanel.remove(selectFilesForTableComboBox);  // Удаляем JComboBox из contentPanel
             selectFilesForTableComboBox = null;
@@ -122,7 +123,7 @@ public class ViewModelTable extends JPanel {
         contentPanel.repaint();
     }
 
-    public JLabel getFileLabel() {
+    JLabel getFileLabel() {
         return fileLabel;
     }
 }

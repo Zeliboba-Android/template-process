@@ -1,9 +1,10 @@
-package org.example;
+package org.example.model;
 
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.example.main.Main;
 
 import java.io.*;
 import java.util.*;
@@ -11,23 +12,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Денис on 20.05.2024
+ * @author пїЅпїЅпїЅпїЅпїЅ on 20.05.2024
  */
 public class TagExtractor {
     private final String regex = "\\$\\{[^}]+\\}";
     private Pattern pattern;
-    List<String> tags = new ArrayList<>();
-    Set<String> uniqueTags = new HashSet<>();
-    HashMap<String, List<String>> fileTagMap = new HashMap<>();
-
-
+    private List<String> tags = new ArrayList<>();
+    public Set<String> uniqueTags = new HashSet<>();
+    private HashMap<String, List<String>> fileTagMap = new HashMap<>();
     private Main main;
     public TagExtractor(Main main) {
         this.main = main;
         this.pattern = Pattern.compile(regex);
 
     }
-    void writeTagsToCSV(File[] Files, String folderPath) {
+    public void writeTagsToCSV(File[] Files, String folderPath) {
         uniqueTags = new HashSet<>();
         String csvFilePath = folderPath + File.separator + "tags.csv";
         Pattern pattern = Pattern.compile(regex);
@@ -81,10 +80,10 @@ public class TagExtractor {
         addCountAuthors(false, null);
         return uniqueTags;
     }
-    //работает теперь
+    //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     public HashMap<String, List<String>> writeTagsToMap(File[] files) {
         fileTagMap = new HashMap<>();
-        uniqueTags = new HashSet<>(); // Сбросим уникальные теги для нового набора файлов
+        uniqueTags = new HashSet<>(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
         for (File file : files) {
             if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
@@ -92,24 +91,24 @@ public class TagExtractor {
                     String text = readTextFromFile(file);
                     Matcher matcher = pattern.matcher(text);
 
-                    // Создаем список тегов для текущего файла
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
                     List<String> fileTags = new ArrayList<>();
 
                     while (matcher.find()) {
                         String tag = matcher.group();
 
-                        // Добавляем тег в общий список уникальных тегов, если его еще нет
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ
                         if (!uniqueTags.contains(tag)) {
                             uniqueTags.add(tag);
                         }
 
-                        // Добавляем тег в список тегов текущего файла, если его еще нет
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ
                         if (!fileTags.contains(tag)) {
                             fileTags.add(tag);
                         }
                     }
 
-                    // Сохраняем список тегов этого файла в карту
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
                     fileTagMap.put(file.getName(), fileTags);
 
                 } catch (IOException e) {
@@ -118,7 +117,7 @@ public class TagExtractor {
             }
         }
 
-        addCountAuthors(false, null); // Если нужно обновить теги для авторов
+        addCountAuthors(false, null); // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
         System.out.println("--------------------------------------------------------");
         System.out.println(fileTagMap);
@@ -138,7 +137,7 @@ public class TagExtractor {
             }
             for (int i = 1; i <= countAuthors; i++) {
                 for (String tag : additionTags) {
-                    String authorTag = tag.replace("X1", "X" + i); // Заменяем "X1" на текущий индекс автора
+                    String authorTag = tag.replace("X1", "X" + i); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ "X1" пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                     if (!uniqueTags.contains(authorTag)) {
                         uniqueTags.add(authorTag);
                         if (useCSV && writer != null) {

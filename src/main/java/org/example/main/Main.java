@@ -1,18 +1,21 @@
-package org.example;
+package org.example.main;
+
+import org.example.controller.DocumentGenerator;
+import org.example.view.ViewModelStartScreen;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class Main {
     public JFrame frame;
-    ViewModelStartScreen viewModelStartScreen;
+    public ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
-    Main() {
+    private Main() {
         documentGenerator = new DocumentGenerator(this);
         viewModelStartScreen = new ViewModelStartScreen(this, documentGenerator);
         generateFrame();
     }
-    void generateFrame(){
+    public void generateFrame(){
         frame = new JFrame("Генерация документов"); // Создаем главное окно
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
         frame.setSize(300,600);
@@ -22,7 +25,7 @@ public class Main {
         frame.setVisible(true); // Делаем окно видимым
     }
 
-    void disposeFrame(Frame frame){
+    public void disposeFrame(Frame frame){
         frame.dispose();
     }
 

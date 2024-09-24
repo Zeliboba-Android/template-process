@@ -1,4 +1,4 @@
-package org.example;
+package org.example.view;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -7,7 +7,6 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
 
 public class ViewStyles {
-
     private static final Font DEFAULT_FONT = new Font("Arial", Font.BOLD, 14);
     private static final Font LABEL_FONT = new Font("Arial",Font.BOLD,32);
     private static final Color BACKGROUND_COLOR = new Color(255, 255, 255);  // светлый цвет фона
@@ -19,18 +18,18 @@ public class ViewStyles {
     private static final Color COMBOBOX_BORDER_COLOR = new Color(150, 150, 150); // Серый цвет границы
 
     // Метод для стилизации JLabel
-    public static void styleLabel(JLabel label) {
+    static void styleLabel(JLabel label) {
         label.setFont(DEFAULT_FONT);
         label.setForeground(TEXT_COLOR_LABEL);
     }
 
-    public static void styleStartLabel(JLabel label) {
+    static void styleStartLabel(JLabel label) {
         label.setFont(LABEL_FONT);
         label.setForeground(BUTTON_COLOR);
     }
 
     // Метод для стилизации JButton
-    public static void styleButton(JButton button) {
+    static void styleButton(JButton button) {
         button.setFont(DEFAULT_FONT);
         button.setBackground(BUTTON_COLOR);
         button.setForeground(TEXT_COLOR_BUTTON);
@@ -38,7 +37,7 @@ public class ViewStyles {
     }
 
     // Метод для стилизации JComboBox
-    public static void styleComboBox(JComboBox<?> comboBox) {
+    static void styleComboBox(JComboBox<?> comboBox) {
         comboBox.setFont(DEFAULT_FONT);
         comboBox.setBackground(COMBOBOX_BACKGROUND);
         comboBox.setForeground(COMBOBOX_FOREGROUND);
@@ -50,9 +49,17 @@ public class ViewStyles {
 
         // Стилизация выпадающего списка
         comboBox.setUI(new ModernComboBoxUI());
-
-
     }
+
+    // Метод для стилизации JCheckBox
+    static void styleCheckBox(JCheckBox checkBox) {
+        checkBox.setFont(DEFAULT_FONT);
+        checkBox.setForeground(TEXT_COLOR_LABEL);
+        checkBox.setBackground(BACKGROUND_COLOR);
+        checkBox.setFocusPainted(false); // Убираем рамку вокруг текста при фокусе
+        checkBox.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    }
+
 
     // Внутренний класс для стилизации отдельных элементов выпадающего списка
     static class CustomComboBoxRenderer extends DefaultListCellRenderer {
@@ -88,10 +95,10 @@ public class ViewStyles {
         }
     }
     // Метод для установки стандартного цвета и фона панели
-    public static void stylePanel(JPanel panel) {
+    static void stylePanel(JPanel panel) {
         panel.setBackground(BACKGROUND_COLOR);
     }
-    public static void styleTextField(JTextField textField) {
+    static void styleTextField(JTextField textField) {
         Font textFieldFont = new Font("Arial", Font.PLAIN, 14); // Шрифт текстового поля
         Color backgroundColor = new Color(250, 250, 250); // Светло-серый фон
         Color borderColor = new Color(150, 150, 150); // Цвет границы
@@ -105,7 +112,7 @@ public class ViewStyles {
         textField.setBorder(BorderFactory.createCompoundBorder(border, BorderFactory.createEmptyBorder(5, 10, 5, 10))); // Отступы внутри текстового поля
     }
 
-    public static void styleScrollBar(JScrollBar scrollBar) {
+    static void styleScrollBar(JScrollBar scrollBar) {
         scrollBar.setUI(new BasicScrollBarUI() {
             @Override
             protected void configureScrollBarColors() {
