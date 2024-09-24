@@ -12,27 +12,38 @@ public class ViewModelTable extends JPanel {
     private JButton generateButtonUsingTable;
     public JButton buttonBackSpace;
     private JComboBox<String> selectFilesForTableComboBox;
-    private ViewModelTextFields viewModelTextFields;  // Add a field for ViewModelTextFields
-
+    private ViewModelTextFields viewModelTextFields;
     private JLabel fileLabel;
 
+    // Константы для одинакового размера компонентов
+    private static final Dimension COMPONENT_SIZE = new Dimension(300, 50);
+
+    // Добавляем contentPanel на уровне класса
+    private JPanel contentPanel;
+
     public ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
-        this.viewModelStartScreen = viewModelStartScreen;  // сохраняем переданный экземпляр
+        this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
         this.main = main;
-        this.viewModelTextFields = new ViewModelTextFields(main, viewModelStartScreen, documentGenerator,this);  // Initialize ViewModelTextFields
-
-        setLayout(null);
+        this.viewModelTextFields = new ViewModelTextFields(main, viewModelStartScreen, documentGenerator, this);
+        ViewStyles.stylePanel(this);
+        setLayout(new BorderLayout()); // Используем BorderLayout для основного компонента
         setFocusable(true);
-        initializeTable();
+        initializeTable();  // Убедимся, что initializeTable вызывается в конструкторе
     }
 
-    public void initializeTable(){
-        buttonBackSpace = new JButton();
-        buttonBackSpace.setText("⬅");
+    public void initializeTable() {
+        // Панель для кнопки BackSpace, размещенной в верхнем левом углу
+        JPanel backButtonPanel = new JPanel();
+        backButtonPanel.setLayout(new BorderLayout());
+        backButtonPanel.setPreferredSize(new Dimension(70, 50));
+
+        // Кнопка "Назад"
+        buttonBackSpace = new JButton("⬅");
         Font font = buttonBackSpace.getFont();
-        buttonBackSpace.setFont(font.deriveFont(Font.PLAIN,32));
-        buttonBackSpace.setBounds(0, 0, 70, 50);
+        ViewStyles.styleButton(buttonBackSpace);
+        buttonBackSpace.setFont(font.deriveFont(Font.PLAIN, 32));
+        buttonBackSpace.setPreferredSize(new Dimension(70, 50)); // Размер кнопки
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -42,45 +53,77 @@ public class ViewModelTable extends JPanel {
                 clearComboBox();
             }
         });
-        add(buttonBackSpace);
+        backButtonPanel.add(buttonBackSpace, BorderLayout.NORTH);
+        add(backButtonPanel, BorderLayout.WEST); // Добавляем кнопку в верхний левый угол
 
-        // Add components from ViewModelTextFields
-        viewModelTextFields.chooseFileButton.setBounds(100, 20, 200, 50);
-        add(viewModelTextFields.chooseFileButton);
+        // Инициализация contentPanel
+        contentPanel = new JPanel();
+        contentPanel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 0, 10, 0);
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.NONE;
+
+        // Кнопка выбора файла из ViewModelTextFields
+        viewModelTextFields.chooseFileButton.setPreferredSize(COMPONENT_SIZE);
+        gbc.gridy = 0;
+        contentPanel.add(viewModelTextFields.chooseFileButton, gbc);
+
+        // Метка для отображения выбранного файла
         fileLabel = new JLabel("Файл(ы) не выбран(ы):");
-        fileLabel.setBounds(100, 65, 400, 30);
-        add(fileLabel);
+        fileLabel.setPreferredSize(new Dimension(290, 30));
+        gbc.gridy = 2;
+        contentPanel.add(fileLabel, gbc);
 
+        // Кнопка генерации
         generateButtonUsingTable = new JButton("Генерация с помощью таблицы");
-        generateButtonUsingTable.setBounds(100, 150, 200, 50);
+        generateButtonUsingTable.setPreferredSize(COMPONENT_SIZE);
+        ViewStyles.styleButton(generateButtonUsingTable);
         generateButtonUsingTable.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 documentGenerator.generateDocument();
             }
         });
-        add(generateButtonUsingTable);
+        gbc.gridy = 1;
+        contentPanel.add(generateButtonUsingTable, gbc);
+
+        add(contentPanel, BorderLayout.CENTER); // Добавляем панель с остальными компонентами в центр
     }
+
     public void updateComboBox(String[] select) {
         if (selectFilesForTableComboBox != null) {
-            remove(selectFilesForTableComboBox);
+            contentPanel.remove(selectFilesForTableComboBox);  // Удаляем старый JComboBox из contentPanel
         }
+
         selectFilesForTableComboBox = new JComboBox<>(select);
-        selectFilesForTableComboBox.setBounds(100, 100, 300, 30);
-        add(selectFilesForTableComboBox);
-        revalidate();
-        repaint();
+        selectFilesForTableComboBox.setPreferredSize(new Dimension(300, 30));
+        selectFilesForTableComboBox.setMaximumRowCount(15);
+        ViewStyles.styleComboBox(selectFilesForTableComboBox);
+
+        // Добавляем ComboBox в contentPanel с корректными GridBagConstraints
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 0, 10, 0);
+        gbc.gridy = 3;  // Убедитесь, что позиция соответствует другим элементам
+        gbc.anchor = GridBagConstraints.CENTER;
+        contentPanel.add(selectFilesForTableComboBox, gbc);
+
+        // Обновляем панель
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
+
     public void clearComboBox() {
         if (selectFilesForTableComboBox != null) {
-            remove(selectFilesForTableComboBox);
+            contentPanel.remove(selectFilesForTableComboBox);  // Удаляем JComboBox из contentPanel
             selectFilesForTableComboBox = null;
         }
-        revalidate();
-        repaint();
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
+
     public JLabel getFileLabel() {
         return fileLabel;
     }
-
 }
+

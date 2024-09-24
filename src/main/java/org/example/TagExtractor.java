@@ -11,7 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Р”РµРЅРёСЃ on 20.05.2024
+ * @author Денис on 20.05.2024
  */
 public class TagExtractor {
     private final String regex = "\\$\\{[^}]+\\}";
@@ -81,41 +81,50 @@ public class TagExtractor {
         addCountAuthors(false, null);
         return uniqueTags;
     }
-    //СЂР°Р±РѕС‚Р°РµС‚ С‚РµРїРµСЂСЊ
+    //работает теперь
     public HashMap<String, List<String>> writeTagsToMap(File[] files) {
         fileTagMap = new HashMap<>();
-        uniqueTags = writeTagsToSet(files);
+        uniqueTags = new HashSet<>(); // Сбросим уникальные теги для нового набора файлов
+
         for (File file : files) {
             if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
                 try {
                     String text = readTextFromFile(file);
                     Matcher matcher = pattern.matcher(text);
+
+                    // Создаем список тегов для текущего файла
+                    List<String> fileTags = new ArrayList<>();
+
                     while (matcher.find()) {
                         String tag = matcher.group();
-                        if (!fileTagMap.containsKey(file.getName())) {
-                            fileTagMap.put(file.getName(), new ArrayList<>());
+
+                        // Добавляем тег в общий список уникальных тегов, если его еще нет
+                        if (!uniqueTags.contains(tag)) {
+                            uniqueTags.add(tag);
                         }
-                        tags = fileTagMap.get(file.getName());
-                        if (!tags.contains(tag)) {
-                            tags.add(tag);
-                        }
-                    }
-                    // Add remaining uniqueTags to fileTagMap for this file
-                    for (String tag : uniqueTags) {
-                        if (!tags.contains(tag)) {
-                            tags.add(tag);
+
+                        // Добавляем тег в список тегов текущего файла, если его еще нет
+                        if (!fileTags.contains(tag)) {
+                            fileTags.add(tag);
                         }
                     }
+
+                    // Сохраняем список тегов этого файла в карту
+                    fileTagMap.put(file.getName(), fileTags);
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
-        addCountAuthors(false, null);
+
+        addCountAuthors(false, null); // Если нужно обновить теги для авторов
+
         System.out.println("--------------------------------------------------------");
         System.out.println(fileTagMap);
         return fileTagMap;
     }
+
 
 
     private void addCountAuthors(boolean useCSV, PrintWriter writer){
@@ -129,7 +138,7 @@ public class TagExtractor {
             }
             for (int i = 1; i <= countAuthors; i++) {
                 for (String tag : additionTags) {
-                    String authorTag = tag.replace("X1", "X" + i); // Р—Р°РјРµРЅСЏРµРј "X1" РЅР° С‚РµРєСѓС‰РёР№ РёРЅРґРµРєСЃ Р°РІС‚РѕСЂР°
+                    String authorTag = tag.replace("X1", "X" + i); // Заменяем "X1" на текущий индекс автора
                     if (!uniqueTags.contains(authorTag)) {
                         uniqueTags.add(authorTag);
                         if (useCSV && writer != null) {

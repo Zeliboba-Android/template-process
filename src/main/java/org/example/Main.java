@@ -15,8 +15,9 @@ public class Main {
     void generateFrame(){
         frame = new JFrame("Генерация документов"); // Создаем главное окно
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
-        frame.getContentPane().add(viewModelStartScreen); // Добавляем ViewModel в контейнер главного окна
         frame.setSize(300,600);
+        frame.setMinimumSize(new Dimension(500, 800));
+        frame.getContentPane().add(viewModelStartScreen); // Добавляем ViewModel в контейнер главного окна
         frame.setLocationRelativeTo(null);
         frame.setVisible(true); // Делаем окно видимым
     }
