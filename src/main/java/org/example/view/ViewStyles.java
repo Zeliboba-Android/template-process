@@ -3,6 +3,7 @@ package org.example.view;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicCheckBoxUI;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
 
@@ -54,10 +55,13 @@ public class ViewStyles {
     // Метод для стилизации JCheckBox
     static void styleCheckBox(JCheckBox checkBox) {
         checkBox.setFont(DEFAULT_FONT);
-        checkBox.setForeground(TEXT_COLOR_LABEL);
-        checkBox.setBackground(BACKGROUND_COLOR);
-        checkBox.setFocusPainted(false); // Убираем рамку вокруг текста при фокусе
+        checkBox.setForeground(COMBOBOX_FOREGROUND);
+        checkBox.setBackground(COMBOBOX_BACKGROUND);
+        checkBox.setFocusPainted(false);
         checkBox.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        // Применяем ModernCheckBoxUI для кастомного отображения
+        checkBox.setUI(new ModernCheckBoxUI());
     }
 
 
@@ -122,6 +126,52 @@ public class ViewStyles {
                 this.thumbDarkShadowColor = new Color(50, 50, 150); // Тень ползунка
             }
         });
+    }
+
+    static class ModernCheckBoxUI extends BasicCheckBoxUI {
+        private static final Color CHECKBOX_BORDER_COLOR = new Color(150, 150, 150); // Цвет границы
+        private static final Color CHECKBOX_SELECTED_BACKGROUND = new Color(7, 113, 181); // Цвет при выборе
+        private static final Color CHECKBOX_SELECTED_TICK = Color.WHITE; // Цвет галочки при выборе
+
+        @Override
+        public void paint(Graphics g, JComponent c) {
+            AbstractButton checkBox = (AbstractButton) c;
+            ButtonModel model = checkBox.getModel();
+
+            // Отрисовка квадрата
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int size = 18;
+            int x = 2; // Смещаем квадрат немного вправо
+            int y = (checkBox.getHeight() - size) / 2;
+
+            if (model.isSelected()) {
+                // Рисуем залитый квадрат при выборе
+                g2.setColor(CHECKBOX_SELECTED_BACKGROUND);
+                g2.fillRoundRect(x, y, size, size, 5, 5);
+                // Рисуем галочку
+                g2.setColor(CHECKBOX_SELECTED_TICK);
+                g2.setStroke(new BasicStroke(2));
+                g2.drawLine(x + 4, y + 9, x + 8, y + 13);
+                g2.drawLine(x + 8, y + 13, x + 14, y + 5);
+            } else {
+                // Граница для невыбранного состояния
+                g2.setColor(CHECKBOX_BORDER_COLOR);
+                g2.drawRoundRect(x, y, size, size, 5, 5);
+            }
+
+            g2.dispose();
+
+            // Отрисовка текста рядом с чекбоксом
+            g.setFont(checkBox.getFont());
+            g.setColor(checkBox.getForeground());
+            FontMetrics fm = g.getFontMetrics();
+            String text = checkBox.getText();
+            int textX = size + 8; // Отступ текста от квадрата
+            int textY = (checkBox.getHeight() + fm.getAscent()) / 2 - 2; // Центрируем текст по высоте
+            g.drawString(text, textX, textY);
+        }
     }
 
     
