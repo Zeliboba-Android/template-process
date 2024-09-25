@@ -255,6 +255,7 @@ public class ViewModelTextFields extends JPanel {
     // Способ динамической генерации текстовых полей тегов с заполнителями
     private void generateTextFields(List<String> tags) {
         textFieldPanel.removeAll();
+        System.out.println(tagValuesMap);
         int padding = 10; // Отступы по бокам
         int topPadding = 10; // Отступ сверху для первого элемента
         textFieldPanel.setPreferredSize(new Dimension(textFieldPanel.getWidth(), tags.size() * 40 + topPadding));

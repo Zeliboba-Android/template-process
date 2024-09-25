@@ -54,14 +54,16 @@ public class ViewModelStartScreen extends JPanel {
         super.paintComponent(g);
         // Рисуем изображение (если оно загружено)
         if (logo != null) {
+            int offset = 10; // Отступ между логотипом и надписью
             g.drawImage(logo,
-                    getWidth() / 2 -20 - IMAGE_SIZE.width / 2,
-                    getHeight() / 10 - IMAGE_SIZE.height / 4,
+                    getWidth() / 2 - 20 - IMAGE_SIZE.width / 2,
+                    getHeight() / 10 - IMAGE_SIZE.height / 4 + offset, // Добавляем отступ здесь
                     IMAGE_SIZE.width,
                     IMAGE_SIZE.height,
                     null);
         }
     }
+
 
 
     private void initializeStartScreen() {

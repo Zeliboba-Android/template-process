@@ -83,7 +83,7 @@ public class TagExtractor {
     //�������� ������
     public HashMap<String, List<String>> writeTagsToMap(File[] files) {
         fileTagMap = new HashMap<>();
-        uniqueTags = new HashSet<>(); // ������� ���������� ���� ��� ������ ������ ������
+        uniqueTags = new HashSet<>();
 
         for (File file : files) {
             if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
@@ -97,18 +97,18 @@ public class TagExtractor {
                     while (matcher.find()) {
                         String tag = matcher.group();
 
-                        // ��������� ��� � ����� ������ ���������� �����, ���� ��� ��� ���
+
                         if (!uniqueTags.contains(tag)) {
                             uniqueTags.add(tag);
                         }
 
-                        // ��������� ��� � ������ ����� �������� �����, ���� ��� ��� ���
+
                         if (!fileTags.contains(tag)) {
                             fileTags.add(tag);
                         }
                     }
 
-                    // ��������� ������ ����� ����� ����� � �����
+
                     fileTagMap.put(file.getName(), fileTags);
 
                 } catch (IOException e) {
@@ -126,29 +126,42 @@ public class TagExtractor {
 
 
 
-    private void addCountAuthors(boolean useCSV, PrintWriter writer){
+    private void addCountAuthors(boolean useCSV, PrintWriter writer) {
         Set<String> additionTags = new HashSet<>();
         int countAuthors = main.viewModelStartScreen.selectedNumber;
-        if (countAuthors > 4){
-            for (String tag: uniqueTags){
-                if (tag.contains("key_ria_authorX1")){
+
+        if (countAuthors > 4) {
+            for (String tag : uniqueTags) {
+                if (tag.contains("key_ria_authorX1")) {
                     additionTags.add(tag);
                 }
             }
+
             for (int i = 1; i <= countAuthors; i++) {
                 for (String tag : additionTags) {
-                    String authorTag = tag.replace("X1", "X" + i); // �������� "X1" �� ������� ������ ������
+                    String authorTag = tag.replace("X1", "X" + i); // Заменяем "X1" на нужный номер автора
                     if (!uniqueTags.contains(authorTag)) {
                         uniqueTags.add(authorTag);
+
+                        // Добавляем новый authorTag в fileTagMap
+                        for (Map.Entry<String, List<String>> entry : fileTagMap.entrySet()) {
+                            List<String> tagsList = entry.getValue();
+                            if (!tagsList.contains(authorTag)) {
+                                tagsList.add(authorTag);
+                            }
+                        }
+
                         if (useCSV && writer != null) {
                             writer.println(authorTag + ";1");
                         }
+
                         System.out.println(authorTag);
                     }
                 }
             }
         }
     }
+
 
     private String readTextFromFile(File file) throws IOException {
         StringBuilder text = new StringBuilder();
