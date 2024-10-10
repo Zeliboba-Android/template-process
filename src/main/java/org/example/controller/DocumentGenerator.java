@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static org.example.view.ViewModelStartScreen.chosenDirectoryPath;
 import static org.example.view.ViewModelStartScreen.isConvertToPdfSelected;
 
 /**
@@ -263,9 +264,9 @@ public class DocumentGenerator {
         // Получаем текущую дату и время
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss");
         String currentDateTime = sdf.format(new Date());
-        String targetFolder = getClass().getClassLoader().getResource("").getPath();
+        String targetFolder = chosenDirectoryPath != null ? chosenDirectoryPath : getClass().getClassLoader().getResource("").getPath();
         targetFolder = URLDecoder.decode(targetFolder, StandardCharsets.UTF_8);
-        outputFolderPath = targetFolder + currentDateTime;
+        outputFolderPath = targetFolder + File.separator + currentDateTime;
         // Создаем папку
         File outputFolder = new File(outputFolderPath);
         if (outputFolder.mkdirs()) {

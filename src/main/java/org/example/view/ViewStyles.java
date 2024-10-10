@@ -173,8 +173,5 @@ public class ViewStyles {
             g.drawString(text, textX, textY);
         }
     }
-
-    
-
 }
 

@@ -12,7 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author ����� on 20.05.2024
+ * @author Денис on 20.05.2024
  */
 public class TagExtractor {
     private final String regex = "\\$\\{[^}]+\\}";
@@ -80,7 +80,7 @@ public class TagExtractor {
         addCountAuthors(false, null);
         return uniqueTags;
     }
-    //�������� ������
+
     public HashMap<String, List<String>> writeTagsToMap(File[] files) {
         fileTagMap = new HashMap<>();
         uniqueTags = new HashSet<>();
@@ -90,35 +90,24 @@ public class TagExtractor {
                 try {
                     String text = readTextFromFile(file);
                     Matcher matcher = pattern.matcher(text);
-
-                    // ������� ������ ����� ��� �������� �����
                     List<String> fileTags = new ArrayList<>();
 
                     while (matcher.find()) {
                         String tag = matcher.group();
-
-
                         if (!uniqueTags.contains(tag)) {
                             uniqueTags.add(tag);
                         }
-
-
                         if (!fileTags.contains(tag)) {
                             fileTags.add(tag);
                         }
                     }
-
-
                     fileTagMap.put(file.getName(), fileTags);
-
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
-
-        addCountAuthors(false, null); // ���� ����� �������� ���� ��� �������
-
+        addCountAuthors(false, null);
         System.out.println("--------------------------------------------------------");
         System.out.println(fileTagMap);
         return fileTagMap;

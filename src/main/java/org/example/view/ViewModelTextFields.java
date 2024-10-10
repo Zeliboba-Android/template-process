@@ -69,13 +69,8 @@ public class ViewModelTextFields extends JPanel {
             // Установим размеры для scrollPaneButton с учетом отступов
             int scrollPaneButtonX = windowWidth / 2 + marginLeft / 2;  // Размещаем с отступом справа
             scrollPaneButton.setBounds(scrollPaneButtonX, marginTop, 300, scrollPaneHeight);
-
-
             generateButton.setBounds(scrollPaneButtonX-scrollPaneButtonX/4,scrollPaneHeight+scrollPaneHeight/3-20 , 220, 50);
-
             chooseFileButton.setBounds(scrollPaneButtonX-scrollPaneButtonX/4, scrollPaneHeight/15, 220, 50);
-
-
             chooseFileLabel.setBounds(scrollPaneButtonX-scrollPaneButtonX/4,scrollPaneHeight/6,400,30);
 
             // Обновляем компоненты
@@ -134,6 +129,7 @@ public class ViewModelTextFields extends JPanel {
                 removeTextFields();
                 tagValuesMap.clear();
                 FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
+                fileDialog.setFile("*.doc;*.docx");
                 fileDialog.setMultipleMode(true);
                 fileDialog.setVisible(true);
                 documentGenerator.selectedFiles = fileDialog.getFiles();
@@ -145,7 +141,7 @@ public class ViewModelTextFields extends JPanel {
                         viewModelStartScreen.select[i] = documentGenerator.selectedFiles[i].getName();
                     }
 
-                    // Update combo box in ViewModelTable
+                    // Обновить поле со списком в ViewModelTable
                     if (viewModelTable != null) {
                         viewModelTable.clearComboBox();
                         viewModelTable.updateComboBox(viewModelStartScreen.select);
