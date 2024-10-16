@@ -107,11 +107,7 @@ public class ViewModelTextFields extends JPanel {
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                main.generateFrame();
-                main.disposeFrame(viewModelStartScreen.getTextFieldsFrameTextFields());
-                removeTextFields();
-                buttonPanel.removeAll();
-                chooseFileLabel.setText("");
+                main.switchToPanel(viewModelStartScreen);
 
             }
         });
@@ -156,6 +152,7 @@ public class ViewModelTextFields extends JPanel {
                 } else {
                     documentGenerator.tagExtractor.writeTagsToCSV(documentGenerator.selectedFiles, documentGenerator.outputFolderPath);
                 }
+                viewModelTable.generateButtonUsingTable.setEnabled(true);
             }
         });
 

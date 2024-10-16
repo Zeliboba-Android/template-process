@@ -19,6 +19,7 @@ public class TagExtractor {
     private Pattern pattern;
     private List<String> tags = new ArrayList<>();
     public Set<String> uniqueTags = new HashSet<>();
+    public String csvFilePath;
     private HashMap<String, List<String>> fileTagMap = new HashMap<>();
     private Main main;
     public TagExtractor(Main main) {
@@ -28,7 +29,7 @@ public class TagExtractor {
     }
     public void writeTagsToCSV(File[] Files, String folderPath) {
         uniqueTags = new HashSet<>();
-        String csvFilePath = folderPath + File.separator + "tags.csv";
+        csvFilePath = folderPath + File.separator + "tags.csv";
         Pattern pattern = Pattern.compile(regex);
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(csvFilePath, true), "cp1251")))) {

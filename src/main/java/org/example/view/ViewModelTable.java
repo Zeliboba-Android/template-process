@@ -12,7 +12,7 @@ public class ViewModelTable extends JPanel {
     private Main main;
     private ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
-    private JButton generateButtonUsingTable;
+    JButton generateButtonUsingTable;
     private JButton buttonBackSpace;
     private JComboBox<String> selectFilesForTableComboBox;
     private ViewModelTextFields viewModelTextFields;
@@ -48,10 +48,7 @@ public class ViewModelTable extends JPanel {
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                main.generateFrame();
-                main.disposeFrame(viewModelStartScreen.getTextFieldsFrameTable());
-                fileLabel.setText("Файл(ы) не выбран(ы):");
-                clearComboBox();
+                main.switchToPanel(viewModelStartScreen);
             }
         });
         backButtonPanel.add(buttonBackSpace, BorderLayout.NORTH);
@@ -78,6 +75,7 @@ public class ViewModelTable extends JPanel {
 
         // Кнопка генерации
         generateButtonUsingTable = new JButton("Генерация с помощью таблицы");
+        generateButtonUsingTable.setEnabled(false);
         generateButtonUsingTable.setPreferredSize(COMPONENT_SIZE);
         ViewStyles.styleButton(generateButtonUsingTable);
         generateButtonUsingTable.addActionListener(new ActionListener() {

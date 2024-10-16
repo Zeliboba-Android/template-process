@@ -45,29 +45,9 @@ public class ViewModelStartScreen extends JPanel {
         this.documentGenerator = documentGenerator;
         viewModelTextFields = new ViewModelTextFields(main,this, this.documentGenerator,viewModelTable);
         viewModelTable = new ViewModelTable(main,this, this.documentGenerator);
-        try {
-            logo = ImageIO.read(getClass().getClassLoader().getResource("image/Logo.jpeg"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         initializeStartScreen();
     }
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        // Рисуем изображение (если оно загружено)
-        if (logo != null) {
-            int offset = 10; // Отступ между логотипом и надписью
-            g.drawImage(logo,
-                    getWidth() / 2 - 20 - IMAGE_SIZE.width / 2,
-                    getHeight() / 12 - IMAGE_SIZE.height / 4, // Добавляем отступ здесь
-                    IMAGE_SIZE.width,
-                    IMAGE_SIZE.height,
-                    null);
-        }
-    }
-
     private void initializeStartScreen() {
         // Применяем стиль к текущей панели
         ViewStyles.stylePanel(this);
@@ -132,6 +112,8 @@ public class ViewModelStartScreen extends JPanel {
                     chosenDirectoryPath = selectedDirectory.getAbsolutePath();
                     chosenDirectoryLabel.setText("Путь: " + chosenDirectoryPath);
                 }
+                buttonGenerateWithTextFields.setEnabled(true);
+                buttonGenerateWithTable.setEnabled(true);
             }
         });
 
@@ -167,6 +149,7 @@ public class ViewModelStartScreen extends JPanel {
 
         // Создаем и стилизуем кнопку для генерации с текстовыми полями
         buttonGenerateWithTextFields = new JButton("Использовать поля ввода");
+        buttonGenerateWithTextFields.setEnabled(false);
         ViewStyles.styleButton(buttonGenerateWithTextFields);
         buttonGenerateWithTextFields.setPreferredSize(COMPONENT_SIZE); // Устанавливаем размер
         gbc.insets = new Insets(0, 0, 5, 0); // Сброс отступов для остальных элементов
@@ -175,45 +158,25 @@ public class ViewModelStartScreen extends JPanel {
         buttonGenerateWithTextFields.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                textFieldsFrameTextFields = new JFrame("Генерация с текстовыми полями");
-                textFieldsFrameTextFields.getContentPane().add(viewModelTextFields);
-                textFieldsFrameTextFields.setSize(new Dimension(830, 750));
-                textFieldsFrameTextFields.setMinimumSize(new Dimension(900, 800)); // Задаем минимальный размер
-                textFieldsFrameTextFields.setLocationRelativeTo(null);
-                textFieldsFrameTextFields.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                textFieldsFrameTextFields.setVisible(true);
+                main.switchToPanel(viewModelTextFields);
                 verification = true;
-                main.disposeFrame(main.frame);
             }
         });
 
         // Создаем и стилизуем кнопку для генерации с помощью таблицы
         buttonGenerateWithTable = new JButton("Использовать таблицу");
         ViewStyles.styleButton(buttonGenerateWithTable);
+        buttonGenerateWithTable.setEnabled(false);
         buttonGenerateWithTable.setPreferredSize(COMPONENT_SIZE); // Устанавливаем размер
         gbc.gridy = 8;
         add(buttonGenerateWithTable, gbc);
         buttonGenerateWithTable.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                textFieldsFrameTable = new JFrame("Генерация с помощью таблицы");
-                textFieldsFrameTable.getContentPane().add(viewModelTable);
-                textFieldsFrameTable.setSize(new Dimension(500, 700));
-                textFieldsFrameTable.setMinimumSize(new Dimension(550, 750));
-                textFieldsFrameTable.setLocationRelativeTo(null);
-                textFieldsFrameTable.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                textFieldsFrameTable.setVisible(true);
+                main.switchToPanel(viewModelTable);
                 verification = false;
-                main.disposeFrame(main.frame);
             }
         });
-    }
-    public JFrame getTextFieldsFrameTable() {
-        return textFieldsFrameTable;
-    }
-
-    public JFrame getTextFieldsFrameTextFields() {
-        return textFieldsFrameTextFields;
     }
 
     public static boolean isConvertToPdfSelected() {
