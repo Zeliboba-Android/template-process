@@ -10,10 +10,9 @@ public class GenerateFileUsingTable {
     private TagMap tagMap;
     // Загрузка данных из CSV файла
     private Map<String, String> dataMap = new HashMap<>();
-    GenerateFileUsingTable(TagMap tagMap, String outputFolderPath) {
+    GenerateFileUsingTable(TagMap tagMap, String csvFilePath) {
         this.tagMap = tagMap;
         // Путь к CSV файлу с данными
-        String csvFilePath = outputFolderPath + File.separator + "tags.csv";
         try (// Укажите правильную кодировку вашего файла CSV
              BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFilePath),"cp1251"));
         ) {

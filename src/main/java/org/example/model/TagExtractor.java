@@ -45,7 +45,6 @@ public class TagExtractor {
                                 uniqueTags.add(tag);
                             }
                         }
-//                        writer.println();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -119,20 +118,17 @@ public class TagExtractor {
     private void addCountAuthors(boolean useCSV, PrintWriter writer) {
         Set<String> additionTags = new HashSet<>();
         int countAuthors = main.viewModelStartScreen.selectedNumber;
-
         if (countAuthors > 4) {
             for (String tag : uniqueTags) {
                 if (tag.contains("key_ria_authorX1")) {
                     additionTags.add(tag);
                 }
             }
-
             for (int i = 1; i <= countAuthors; i++) {
                 for (String tag : additionTags) {
                     String authorTag = tag.replace("X1", "X" + i); // Заменяем "X1" на нужный номер автора
                     if (!uniqueTags.contains(authorTag)) {
                         uniqueTags.add(authorTag);
-
                         // Добавляем новый authorTag в fileTagMap
                         for (Map.Entry<String, List<String>> entry : fileTagMap.entrySet()) {
                             List<String> tagsList = entry.getValue();
@@ -140,11 +136,9 @@ public class TagExtractor {
                                 tagsList.add(authorTag);
                             }
                         }
-
                         if (useCSV && writer != null) {
                             writer.println(authorTag + ";1");
                         }
-
                         System.out.println(authorTag);
                     }
                 }
@@ -170,4 +164,46 @@ public class TagExtractor {
         }
         return text.toString();
     }
+
+    public void loadTagsFromCSV(File csvFile) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFile), "cp1251"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(";", 2);
+                if (parts.length == 2) {
+                    uniqueTags.add(parts[0].trim()); // Загружаем тег в set уникальных тегов
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<String> verifyTagsInCSV(File[] files, File csvFile) {
+        Set<String> documentTags = writeTagsToSet(files); // Получаем теги из документов
+        Set<String> csvTags = new HashSet<>();
+        // Загружаем теги из файла CSV
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFile), "cp1251"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(";", 2);
+                if (parts.length == 2) {
+                    csvTags.add(parts[0].trim()); // Загружаем тег в set
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Проверяем наличие всех тегов в CSV
+        List<String> missingTags = new ArrayList<>();
+        for (String tag : documentTags) {
+            if (!csvTags.contains(tag)) {
+                missingTags.add(tag); // Добавляем отсутствующий тег в список
+            }
+        }
+
+        return missingTags;
+    }
+
 }

@@ -150,7 +150,7 @@ public class ViewModelTextFields extends JPanel {
                     generateFileButtons(fileTagMap);
                     generateTextFields(getAllTags(fileTagMap));
                 } else {
-                    documentGenerator.tagExtractor.writeTagsToCSV(documentGenerator.selectedFiles, documentGenerator.outputFolderPath);
+                    documentGenerator.selectOrCreateCSV();
                 }
                 viewModelTable.generateButtonUsingTable.setEnabled(true);
             }

@@ -7,11 +7,13 @@ import org.example.main.Main;
 import org.example.model.*;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 
 import static org.example.view.ViewModelStartScreen.chosenDirectoryPath;
 import static org.example.view.ViewModelStartScreen.isConvertToPdfSelected;
@@ -114,7 +116,6 @@ public class DocumentGenerator {
         if (main.viewModelStartScreen.verification){
             fillTags();
         }else {
-            generateFileUsingTable = new GenerateFileUsingTable(tagMap, outputFolderPath);
             generateFileUsingTable.fillTagsUsingTable();
         }
     }
@@ -175,6 +176,14 @@ public class DocumentGenerator {
         // Конвертация в PDF, если включена опция convertToPdf
         if (isConvertToPdfSelected()) {
             convertAllWordDocumentsToPdf();
+        }
+
+        // Открытие папки сгенерированных документов
+        try {
+            Desktop.getDesktop().open(new File(outputFolderPath));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Не удалось открыть папку с результатами: " + outputFolderPath);
         }
     }
 
@@ -275,5 +284,46 @@ public class DocumentGenerator {
             }
             new File(outputFolder, "Word").mkdir();
         }
+    }
+
+    public void selectOrCreateCSV() {
+        FileDialog fileDialog = new FileDialog((Frame) null, "Выберите существующий файл tags.csv или создайте новый", FileDialog.LOAD);
+        fileDialog.setFile("*.csv");
+        fileDialog.setVisible(true);
+
+        String selectedFile = fileDialog.getFile();
+        String directory = fileDialog.getDirectory();
+
+        if (selectedFile != null && directory != null) {
+            File csvFile = new File(directory, selectedFile);
+            if (csvFile.exists()) {
+                List<String> missingTags = tagExtractor.verifyTagsInCSV(selectedFiles, csvFile);
+
+                if (!missingTags.isEmpty()) {
+                    // Формируем строку с каждым тегом на новой строке
+                    String errorMessage = "Отсутствующие теги:\n" + String.join("\n", missingTags);
+                    JTextArea textArea = new JTextArea(errorMessage);
+                    textArea.setEditable(false); // Запрет редактирования
+                    textArea.setLineWrap(false); // Отключаем перенос строк
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    scrollPane.setPreferredSize(new Dimension(400, 300)); // Размер окна с прокруткой
+
+                    // Выводим сообщение с прокруткой
+                    JOptionPane.showMessageDialog(null, scrollPane, "Ошибка: вы выбрали таблицу с недостающими тегами!", JOptionPane.ERROR_MESSAGE);
+                    return; // Прерываем выполнение, если теги отсутствуют
+                }
+                // Если все теги на месте, загружаем CSV
+                tagMap = new TagMap();
+                generateFileUsingTable = new GenerateFileUsingTable(tagMap, csvFile.getAbsolutePath());
+            }
+        } else {
+            createNewCSV();
+            String csvFilePath = outputFolderPath + File.separator + "tags.csv";
+            generateFileUsingTable = new GenerateFileUsingTable(tagMap, csvFilePath);
+        }
+    }
+
+    private void createNewCSV() {
+        tagExtractor.writeTagsToCSV(selectedFiles, outputFolderPath);
     }
 }
