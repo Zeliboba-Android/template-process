@@ -29,8 +29,9 @@ public class DocumentGenerator {
     public TagExtractor tagExtractor;
     private TagMap tagMap;
     private TagMap copyTagMap = new TagMap();
-    public String outputFolderPath;
+    private String outputFolderPath;
     public File[] selectedFiles;
+    private String csvFilePath;
     public DocumentGenerator(Main main) {
         this.main = main;
         tagMap = new TagMap();
@@ -116,6 +117,7 @@ public class DocumentGenerator {
         if (main.viewModelStartScreen.verification){
             fillTags();
         }else {
+            generateFileUsingTable = new GenerateFileUsingTable(tagMap, csvFilePath);
             generateFileUsingTable.fillTagsUsingTable();
         }
     }
@@ -318,8 +320,7 @@ public class DocumentGenerator {
             }
         } else {
             createNewCSV();
-            String csvFilePath = outputFolderPath + File.separator + "tags.csv";
-            generateFileUsingTable = new GenerateFileUsingTable(tagMap, csvFilePath);
+            csvFilePath = outputFolderPath + File.separator + "tags.csv";
         }
     }
 
