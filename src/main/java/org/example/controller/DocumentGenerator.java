@@ -181,12 +181,7 @@ public class DocumentGenerator {
         }
 
         // Открытие папки сгенерированных документов
-        try {
-            Desktop.getDesktop().open(new File(outputFolderPath));
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Не удалось открыть папку с результатами: " + outputFolderPath);
-        }
+        openFolder(outputFolderPath);
     }
 
     private void replaceText(File file, TagMap tags, String authorPrefix){
@@ -316,15 +311,39 @@ public class DocumentGenerator {
                 }
                 // Если все теги на месте, загружаем CSV
                 tagMap = new TagMap();
-                generateFileUsingTable = new GenerateFileUsingTable(tagMap, csvFile.getAbsolutePath());
+                csvFilePath = csvFile.getAbsolutePath();
             }
         } else {
             createNewCSV();
             csvFilePath = outputFolderPath + File.separator + "tags.csv";
+            // Открытие папки с таблицей для последующего редактирования
+            openCSVFile(csvFilePath);
         }
     }
 
     private void createNewCSV() {
         tagExtractor.writeTagsToCSV(selectedFiles, outputFolderPath);
     }
+
+    // Метод для открытия папки после генерации документов
+    private void openFolder(String outputFolderPath){
+        try {
+            Desktop.getDesktop().open(new File(outputFolderPath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Метод для открытия файла tags.csv для последующего редактирования
+    private void openCSVFile(String filePath) {
+        try {
+            File csvFile = new File(filePath);
+            if (csvFile.exists()) {
+                Desktop.getDesktop().open(csvFile);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
