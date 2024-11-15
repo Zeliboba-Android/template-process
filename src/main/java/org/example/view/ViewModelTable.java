@@ -12,13 +12,13 @@ public class ViewModelTable extends JPanel {
     private Main main;
     private ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
-    JButton generateButtonUsingTable;
+    public JButton generateButtonUsingTable;
     private JButton buttonBackSpace;
     private JComboBox<String> selectFilesForTableComboBox;
     private ViewModelTextFields viewModelTextFields;
     private JLabel fileLabel;
     // Константы для одинакового размера компонентов
-    private static final Dimension COMPONENT_SIZE = new Dimension(300, 50);
+    private static final Dimension COMPONENT_SIZE = new Dimension((int) (300*1.4), (int) (50*1.4));
     // Добавляем contentPanel на уровне класса
     private JPanel contentPanel;
 
@@ -34,25 +34,19 @@ public class ViewModelTable extends JPanel {
     }
 
     private void initializeTable() {
-        // Панель для кнопки BackSpace, размещенной в верхнем левом углу
-        JPanel backButtonPanel = new JPanel();
-        backButtonPanel.setLayout(new BorderLayout());
-        backButtonPanel.setPreferredSize(new Dimension(70, 50));
-
-        // Кнопка "Назад"
-        buttonBackSpace = new JButton("⬅");
+        buttonBackSpace = new JButton();
+        buttonBackSpace.setText("⬅");
         Font font = buttonBackSpace.getFont();
         ViewStyles.styleButton(buttonBackSpace);
         buttonBackSpace.setFont(font.deriveFont(Font.PLAIN, 32));
-        buttonBackSpace.setPreferredSize(new Dimension(70, 50)); // Размер кнопки
+        buttonBackSpace.setBounds(5, 5, 100, 70);  // Устанавливаем фиксированные размеры
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 main.switchToPanel(viewModelStartScreen);
             }
         });
-        backButtonPanel.add(buttonBackSpace, BorderLayout.NORTH);
-        add(backButtonPanel, BorderLayout.WEST); // Добавляем кнопку в верхний левый угол
+        add(buttonBackSpace);
 
         // Инициализация contentPanel
         contentPanel = new JPanel();
@@ -69,7 +63,8 @@ public class ViewModelTable extends JPanel {
 
         // Метка для отображения выбранного файла
         fileLabel = new JLabel("Файл(ы) не выбран(ы):");
-        fileLabel.setPreferredSize(new Dimension(290, 30));
+        fileLabel.setPreferredSize(new Dimension(400, 30));
+        ViewStyles.styleLabel(fileLabel);
         gbc.gridy = 2;
         contentPanel.add(fileLabel, gbc);
 
@@ -96,7 +91,7 @@ public class ViewModelTable extends JPanel {
         }
 
         selectFilesForTableComboBox = new JComboBox<>(select);
-        selectFilesForTableComboBox.setPreferredSize(new Dimension(300, 30));
+        selectFilesForTableComboBox.setPreferredSize(new Dimension(COMPONENT_SIZE.width, COMPONENT_SIZE.height));
         selectFilesForTableComboBox.setMaximumRowCount(15);
         ViewStyles.styleComboBox(selectFilesForTableComboBox);
 

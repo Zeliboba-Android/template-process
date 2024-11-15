@@ -41,6 +41,21 @@ public class TagDatabase {
         return placeholder;
     }
 
+    public String getTagByPlaceholder(String placeholder) {
+        String tag = null;
+        try {
+            PreparedStatement pstmt = connection.prepareStatement("SELECT tag FROM tags WHERE placeholder = ?");
+            pstmt.setString(1, placeholder);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                tag = rs.getString("tag");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return tag;
+    }
+
     // Сохранение нового тега в базу данных
     public void saveTag(String tag) {
         try {

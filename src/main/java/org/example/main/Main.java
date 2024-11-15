@@ -27,8 +27,8 @@ public class Main {
     public void generateFrame() {
         frame = new JFrame("Генерация документов"); // Создаем главное окно
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
-        frame.setSize(830, 750);
-        frame.setMinimumSize(new Dimension(900, 700));
+        frame.setMinimumSize(new Dimension(1200, 700));
+        frame.setSize(1200, 750); // Устанавливаем начальный размер окна
 
         // Создаем панель с CardLayout и добавляем в неё начальный экран
         mainPanel = new JPanel(cardLayout);
@@ -38,6 +38,8 @@ public class Main {
         frame.setLocationRelativeTo(null);
         frame.setVisible(true); // Делаем окно видимым
     }
+
+
 
     // Функция для переключения панелей
     public void switchToPanel(JPanel newPanel) {

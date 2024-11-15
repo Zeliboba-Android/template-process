@@ -10,14 +10,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 
 
 public class ViewModelStartScreen extends JPanel {
     private Main main;
     private DocumentGenerator documentGenerator;
     public ViewModelTextFields viewModelTextFields;
-    private ViewModelTable viewModelTable;
+    public ViewModelTable viewModelTable;
     private JLabel labelChoosingGenerateMethod;
     private JLabel labelChooseCountOfAuthor;
     private JButton buttonGenerateWithTextFields;
@@ -27,18 +26,18 @@ public class ViewModelStartScreen extends JPanel {
     public static BufferedImage logo;
     public boolean verification;
     public int selectedNumber = 1;
-    private JFrame textFieldsFrameTextFields;
-    private JFrame textFieldsFrameTable;
     private JCheckBox convertToPdfCheckBox;
     public static boolean convertToPdf = false;
     String[] select;
     private JButton chooseDirectoryButton;
     private JLabel chosenDirectoryLabel;
     public static String chosenDirectoryPath = null;
+
     // Константы для одинакового размера компонентов
-    private static final Dimension COMPONENT_SIZE = new Dimension(260, 40);
-    private static final Dimension LABEL_SIZE = new Dimension(300, 50); // Размер надписи
-    private static final Dimension IMAGE_SIZE = new Dimension(220, 165); // Размер изображения
+    private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
+    private static final Dimension LABEL_SIZE = new Dimension((int)(250 * 1.4), (int)(50 * 1.4)); // Размер надписи
+    private static final Dimension IMAGE_SIZE = new Dimension((int)(220 * 1.4), (int)(165 * 1.4)); // Размер изображения
+
 
     public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator) {
         this.main = main;
@@ -63,7 +62,7 @@ public class ViewModelStartScreen extends JPanel {
         labelChooseCountOfAuthor.setPreferredSize(COMPONENT_SIZE); // Устанавливаем размер
         // Устанавливаем отступ слева для метки
         gbc.insets = new Insets(10, 10, 0, 0);
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         add(labelChooseCountOfAuthor, gbc);
 
         // Создаем и стилизуем JComboBox для выбора количества авторов
@@ -76,7 +75,7 @@ public class ViewModelStartScreen extends JPanel {
         authorComboBox.setMaximumRowCount(10);
         authorComboBox.setPreferredSize(COMPONENT_SIZE); // Устанавливаем размер
         gbc.insets = new Insets(0, 0, 5, 0); // Сброс отступов для остальных элементов
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         add(authorComboBox, gbc);
 
         // Обработка выбора в JComboBox
@@ -91,7 +90,7 @@ public class ViewModelStartScreen extends JPanel {
         universityLabel.setPreferredSize(LABEL_SIZE);
         universityLabel.setHorizontalAlignment(SwingConstants.CENTER); // Центрируем текст
         gbc.gridx = 0;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 20, 0); // Отступ снизу для надписи
         add(universityLabel, gbc);
 
@@ -111,9 +110,9 @@ public class ViewModelStartScreen extends JPanel {
                     File selectedDirectory = fileChooser.getSelectedFile();
                     chosenDirectoryPath = selectedDirectory.getAbsolutePath();
                     chosenDirectoryLabel.setText("Путь: " + chosenDirectoryPath);
+                    buttonGenerateWithTextFields.setEnabled(true);
+                    buttonGenerateWithTable.setEnabled(true);
                 }
-                buttonGenerateWithTextFields.setEnabled(true);
-                buttonGenerateWithTable.setEnabled(true);
             }
         });
 
@@ -123,17 +122,17 @@ public class ViewModelStartScreen extends JPanel {
 
         // Добавление кнопки и метки на экран
         gbc.insets = new Insets(10, 0, 0, 0);
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         add(chooseDirectoryButton, gbc);
         gbc.insets = new Insets(0, 0, 10, 0);
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         add(chosenDirectoryLabel, gbc);
 
         convertToPdfCheckBox = new JCheckBox("Конвертировать в .pdf?");
         ViewStyles.styleCheckBox(convertToPdfCheckBox);
         convertToPdfCheckBox.setPreferredSize(COMPONENT_SIZE);
         gbc.insets = new Insets(10, 0, 20, 0);
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         add(convertToPdfCheckBox, gbc);
         // Обрабатываем изменение состояния чекбокса
         convertToPdfCheckBox.addActionListener(e -> convertToPdf = convertToPdfCheckBox.isSelected());
@@ -144,7 +143,7 @@ public class ViewModelStartScreen extends JPanel {
         labelChoosingGenerateMethod.setPreferredSize(COMPONENT_SIZE); // Устанавливаем размер
         // Устанавливаем отступ слева для метки
         gbc.insets = new Insets(10, 10, 0, 0);
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         add(labelChoosingGenerateMethod, gbc);
 
         // Создаем и стилизуем кнопку для генерации с текстовыми полями
@@ -153,7 +152,7 @@ public class ViewModelStartScreen extends JPanel {
         ViewStyles.styleButton(buttonGenerateWithTextFields);
         buttonGenerateWithTextFields.setPreferredSize(COMPONENT_SIZE); // Устанавливаем размер
         gbc.insets = new Insets(0, 0, 5, 0); // Сброс отступов для остальных элементов
-        gbc.gridy = 7;
+        gbc.gridy = 8;
         add(buttonGenerateWithTextFields, gbc);
         buttonGenerateWithTextFields.addActionListener(new ActionListener() {
             @Override
@@ -168,7 +167,7 @@ public class ViewModelStartScreen extends JPanel {
         ViewStyles.styleButton(buttonGenerateWithTable);
         buttonGenerateWithTable.setEnabled(false);
         buttonGenerateWithTable.setPreferredSize(COMPONENT_SIZE); // Устанавливаем размер
-        gbc.gridy = 8;
+        gbc.gridy = 9;
         add(buttonGenerateWithTable, gbc);
         buttonGenerateWithTable.addActionListener(new ActionListener() {
             @Override

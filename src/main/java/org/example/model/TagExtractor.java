@@ -22,9 +22,12 @@ public class TagExtractor {
     public String csvFilePath;
     private HashMap<String, List<String>> fileTagMap = new HashMap<>();
     private Main main;
+    private TagDatabase tagDatabase;
+
     public TagExtractor(Main main) {
         this.main = main;
         this.pattern = Pattern.compile(regex);
+        this.tagDatabase = new TagDatabase("jdbc:sqlite:tags.db");
 
     }
     public void writeTagsToCSV(File[] Files, String folderPath) {
@@ -41,7 +44,8 @@ public class TagExtractor {
                         while (matcher.find()) {
                             String tag = matcher.group();
                             if (!uniqueTags.contains(tag)) {
-                                writer.println(tag + ";1");
+                                String value = tagDatabase.getPlaceholder(tag);
+                                writer.println(value + ";"+tag + ";1");
                                 uniqueTags.add(tag);
                             }
                         }
@@ -118,17 +122,20 @@ public class TagExtractor {
     private void addCountAuthors(boolean useCSV, PrintWriter writer) {
         Set<String> additionTags = new HashSet<>();
         int countAuthors = main.viewModelStartScreen.selectedNumber;
+
         if (countAuthors > 4) {
             for (String tag : uniqueTags) {
                 if (tag.contains("key_ria_authorX1")) {
                     additionTags.add(tag);
                 }
             }
+
             for (int i = 1; i <= countAuthors; i++) {
                 for (String tag : additionTags) {
                     String authorTag = tag.replace("X1", "X" + i); // Заменяем "X1" на нужный номер автора
                     if (!uniqueTags.contains(authorTag)) {
                         uniqueTags.add(authorTag);
+
                         // Добавляем новый authorTag в fileTagMap
                         for (Map.Entry<String, List<String>> entry : fileTagMap.entrySet()) {
                             List<String> tagsList = entry.getValue();
@@ -136,8 +143,13 @@ public class TagExtractor {
                                 tagsList.add(authorTag);
                             }
                         }
+
+                        // Работа с базой данных: получаем значение из базы данных или добавляем новый тег
+                        String placeholder = tagDatabase.getPlaceholder(authorTag);
+
+                        // Запись в CSV, если это требуется
                         if (useCSV && writer != null) {
-                            writer.println(authorTag + ";1");
+                            writer.println(placeholder + ";" + authorTag + ";1");
                         }
                         System.out.println(authorTag);
                     }
@@ -145,6 +157,7 @@ public class TagExtractor {
             }
         }
     }
+
 
 
     private String readTextFromFile(File file) throws IOException {

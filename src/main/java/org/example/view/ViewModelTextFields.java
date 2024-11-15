@@ -19,6 +19,7 @@ public class ViewModelTextFields extends JPanel {
     public JButton buttonBackSpace;
     public JButton chooseFileButton;
     private JButton showAllTagsButton;
+    private JButton clearButton;
     private JLabel chooseFileLabel;
     private ViewModelStartScreen viewModelStartScreen;
     private JPanel textFieldPanel;
@@ -29,6 +30,7 @@ public class ViewModelTextFields extends JPanel {
     private HashMap<String, List<String>> fileTagMap;
     private Map<String, String> tagValuesMap; // Map to store tag values
     private TagDatabase tagDatabase; // Database instance
+    private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
 
     ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable) {
         this.main = main;
@@ -57,9 +59,9 @@ public class ViewModelTextFields extends JPanel {
             int windowWidth = window.getWidth();
             int windowHeight = window.getHeight();
 
-            int marginTop =windowHeight/6;   // Верхний отступ от окна
-            int marginBottom = windowHeight/6;  // Нижний отступ от окна
-            int marginLeft = windowWidth/18;  // Левый отступ от окна
+            int marginTop = windowHeight / 6;   // Верхний отступ от окна
+            int marginBottom = windowHeight / 6;  // Нижний отступ от окна
+            int marginLeft = windowWidth / 18;  // Левый отступ от окна
 
             // Установим размеры для scrollPane с учетом отступов
             int scrollPaneWidth = (windowWidth / 2) - marginLeft;
@@ -67,17 +69,42 @@ public class ViewModelTextFields extends JPanel {
             scrollPane.setBounds(marginLeft, marginTop, scrollPaneWidth, scrollPaneHeight);
 
             // Установим размеры для scrollPaneButton с учетом отступов
-            int scrollPaneButtonX = windowWidth / 2 + marginLeft / 2;  // Размещаем с отступом справа
-            scrollPaneButton.setBounds(scrollPaneButtonX, marginTop, 300, scrollPaneHeight);
-            generateButton.setBounds(scrollPaneButtonX-scrollPaneButtonX/4,scrollPaneHeight+scrollPaneHeight/3-20 , 220, 50);
-            chooseFileButton.setBounds(scrollPaneButtonX-scrollPaneButtonX/4, scrollPaneHeight/15, 220, 50);
-            chooseFileLabel.setBounds(scrollPaneButtonX-scrollPaneButtonX/4,scrollPaneHeight/6,400,30);
+            int scrollPaneButtonX = ((windowWidth / 2 + 50) + marginLeft / 2);
+            scrollPaneButton.setBounds(scrollPaneButtonX, marginTop, scrollPaneWidth - scrollPaneWidth / 7, scrollPaneHeight);
 
-            // Обновляем компоненты
+            // Изменение размеров кнопок и текстовых полей относительно размеров панели
+            int buttonWidth = (int) ((scrollPaneButton.getWidth() / 3) * 1.6);
+            int buttonHeight = scrollPaneButton.getHeight() / 10;
+
+            int textFieldWidth = scrollPane.getWidth() - 50;
+            int textFieldHeight = 30;
+
+            // Изменяем размеры и положение кнопок
+            int buttonY = scrollPaneHeight / 15;
+            int buttonSpacing = 20; // Фиксированное расстояние между кнопками
+
+            chooseFileButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, buttonY, buttonWidth, buttonHeight);
+            clearButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4 + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight);
+
+            chooseFileLabel.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, scrollPaneHeight / 6, buttonWidth, buttonHeight);
+            generateButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, scrollPaneHeight + scrollPaneHeight / 3 - 20, buttonWidth, buttonHeight);
+
+            // Динамическое изменение размеров текстовых полей
+            int topPadding = 10;
+            int padding = 10;
+            textFieldPanel.setPreferredSize(new Dimension(textFieldWidth, findTextFields().size() * textFieldHeight + topPadding));
+
+            for (JTextField textField : findTextFields()) {
+                textField.setBounds(padding, topPadding, textFieldWidth, textFieldHeight);
+                topPadding += textFieldHeight + padding;
+            }
+
             revalidate();
             repaint();
         }
     }
+
+
 
     private boolean areAllTextFieldsFilled() {
         for (JTextField textField : findTextFields()) {
@@ -103,21 +130,22 @@ public class ViewModelTextFields extends JPanel {
         Font font = buttonBackSpace.getFont();
         ViewStyles.styleButton(buttonBackSpace);
         buttonBackSpace.setFont(font.deriveFont(Font.PLAIN, 32));
-        buttonBackSpace.setBounds(0, 0, 70, 50);
+        buttonBackSpace.setBounds(5, 5, 100, 70);  // Устанавливаем фиксированные размеры
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 main.switchToPanel(viewModelStartScreen);
-
             }
         });
         add(buttonBackSpace);
+
         chooseFileLabel = new JLabel("Файлы не выбраны");
+        chooseFileLabel.setBounds(300, 40, 400, 30); // Устанавливаем фиксированные размеры
+        ViewStyles.styleLabel(chooseFileLabel);
         add(chooseFileLabel);
 
-
         chooseFileButton = new JButton("Выбор файлов (doc/docx)");
-        chooseFileButton.setBounds(300, 40, 200, 50);
+        chooseFileButton.setBounds(300, 80, 200, 50); // Устанавливаем фиксированные размеры
         ViewStyles.styleButton(chooseFileButton);
         chooseFileButton.addActionListener(new ActionListener() {
             @Override
@@ -142,6 +170,7 @@ public class ViewModelTextFields extends JPanel {
                         viewModelTable.clearComboBox();
                         viewModelTable.updateComboBox(viewModelStartScreen.select);
                         viewModelTable.getFileLabel().setText("Выбранные файлы: ");
+                        viewModelTable.generateButtonUsingTable.setEnabled(true);
                     }
                 }
                 documentGenerator.createFolder();
@@ -152,16 +181,30 @@ public class ViewModelTextFields extends JPanel {
                 } else {
                     documentGenerator.selectOrCreateCSV();
                 }
-                viewModelTable.generateButtonUsingTable.setEnabled(true);
             }
         });
-
         add(chooseFileButton);
+        clearButton = new JButton("Очистить всё");
+        ViewStyles.styleButton(clearButton);
+        clearButton.setBounds(500, 80, 100, 50);
+        clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                removeTextFields();
+                removeFileButtons();
+                chooseFileLabel.setText("Файлы не выбраны");
+                generateButton.setEnabled(false);
+                revalidate();
+                repaint();
+            }
+        });
+        add(clearButton);
 
         generateButton = new JButton("Генерация документов");
         ViewStyles.styleButton(generateButton);
         generateButton.setEnabled(false);
         generateButton.setFocusable(false); // Убираем фокус с кнопки
+        generateButton.setBounds(300, 150, 200, 50); // Устанавливаем фиксированные размеры
         generateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -185,24 +228,22 @@ public class ViewModelTextFields extends JPanel {
         ViewStyles.stylePanel(textFieldPanel);
 
         scrollPane = new JScrollPane(textFieldPanel);
-        scrollPane.setBounds(70, 125, 300, 360);
+        scrollPane.setBounds(70, 125, 300, 360); // Устанавливаем фиксированные размеры
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         ViewStyles.styleScrollBar(scrollPane.getVerticalScrollBar());
         add(scrollPane);
 
         buttonPanel = new JPanel();
-
         ViewStyles.stylePanel(buttonPanel);
         add(buttonPanel);
 
         scrollPaneButton = new JScrollPane(buttonPanel);
-        scrollPaneButton.setBounds(450,125,300,360);
+        scrollPaneButton.setBounds(450, 125, 400, 360); // Устанавливаем фиксированные размеры
         scrollPaneButton.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         ViewStyles.styleScrollBar(scrollPaneButton.getVerticalScrollBar());
         add(scrollPaneButton);
-
-
     }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -216,6 +257,9 @@ public class ViewModelTextFields extends JPanel {
             tagDatabase.saveTag(tag);
         }
 
+        // Добавляем тег в скобках к плейсхолдеру
+        placeholder += " (" + tag + ")";
+
         textField.setText(placeholder);
         textField.setForeground(Color.GRAY);
         textField.putClientProperty("placeholder", placeholder); // Сохраняем плейсхолдер в свойство текстового поля
@@ -227,6 +271,8 @@ public class ViewModelTextFields extends JPanel {
                 if (textField.getText().equals(finalPlaceholder)) {
                     textField.setText("");
                     textField.setForeground(Color.BLACK);
+                } else {
+                    tagValuesMap.put(tag, textField.getText());
                 }
             }
 
@@ -241,6 +287,7 @@ public class ViewModelTextFields extends JPanel {
             }
         });
     }
+
 
 
 
@@ -313,16 +360,30 @@ public class ViewModelTextFields extends JPanel {
         scrollPane.repaint();
     }
 
+    private void removeFileButtons(){
+        buttonPanel.removeAll();
+        buttonPanel.revalidate();
+        buttonPanel.repaint();
+        scrollPaneButton.revalidate();
+        scrollPaneButton.repaint();
+    }
+
 
 
     private void generateFileButtons(HashMap<String, List<String>> fileTagMap) {
         buttonPanel.removeAll();
         chooseFileLabel.setText("Выбранные файлы: Показать все теги");
 
+        // Устанавливаем BoxLayout для buttonPanel (вертикальное расположение)
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+        buttonPanel.add(Box.createVerticalStrut(10));  // 10 пикселей отступа
+
         // Кнопка "Показать все теги"
         showAllTagsButton = new JButton("Показать все теги");
         ViewStyles.styleButton(showAllTagsButton);
-        showAllTagsButton.setPreferredSize(new Dimension(250, 30));
+        showAllTagsButton.setPreferredSize(new Dimension(400, 50));
+        showAllTagsButton.setMaximumSize(new Dimension(400, 50));
+        showAllTagsButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         showAllTagsButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -330,14 +391,17 @@ public class ViewModelTextFields extends JPanel {
                 chooseFileLabel.setText("Выбранный файл: " + showAllTagsButton.getText());
             }
         });
+
+        // Добавляем кнопку "Показать все теги"
         if (documentGenerator.selectedFiles.length != 0)
             buttonPanel.add(showAllTagsButton);
-
+        buttonPanel.add(Box.createVerticalStrut(10));  // 10 пикселей отступа
         // Кнопки для конкретных файлов
-        int yOffset = 40; // Начальная Y позиция для кнопок файлов
         for (String fileName : fileTagMap.keySet()) {
             JButton fileButton = new JButton(fileName);
-            fileButton.setPreferredSize(new Dimension(250, 35)); // Фиксированный размер
+            fileButton.setPreferredSize(new Dimension(400, 50));
+            fileButton.setMaximumSize(new Dimension(400, 50));
+            fileButton.setAlignmentX(Component.CENTER_ALIGNMENT);
             ViewStyles.styleButton(fileButton);
             fileButton.addActionListener(new ActionListener() {
                 @Override
@@ -347,19 +411,17 @@ public class ViewModelTextFields extends JPanel {
                     generateTextFields(tags); // Генерация текстовых полей для выбранного файла
                 }
             });
-            buttonPanel.add(fileButton);
-            yOffset += 40; // Увеличиваем Y позицию для следующей кнопки
-        }
 
-        // Устанавливаем предпочитаемый размер buttonPanel
-        buttonPanel.setPreferredSize(new Dimension(200, yOffset));
+            // Добавляем кнопку для каждого файла
+            buttonPanel.add(fileButton);
+            // Добавляем отступ после каждой кнопки
+            buttonPanel.add(Box.createVerticalStrut(10));  // 10 пикселей отступа
+        }
 
         // Обновляем buttonPanel
         buttonPanel.revalidate();
         buttonPanel.repaint();
     }
-
-
 
     private void closeDatabase() {
         tagDatabase.close(); // Method to close the database connection
