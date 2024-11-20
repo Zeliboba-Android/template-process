@@ -171,6 +171,8 @@ public class ViewModelTextFields extends JPanel {
                         viewModelTable.updateComboBox(viewModelStartScreen.select);
                         viewModelTable.getFileLabel().setText("Выбранные файлы: ");
                         viewModelTable.generateButtonUsingTable.setEnabled(true);
+                        viewModelTable.createCSVButton.setEnabled(true);
+                        viewModelTable.selectCSVButton.setEnabled(true);
                     }
                 }
                 documentGenerator.createFolder();
@@ -178,8 +180,6 @@ public class ViewModelTextFields extends JPanel {
                     fileTagMap = documentGenerator.tagExtractor.writeTagsToMap(documentGenerator.selectedFiles);
                     generateFileButtons(fileTagMap);
                     generateTextFields(getAllTags(fileTagMap));
-                } else {
-                    documentGenerator.selectOrCreateCSV();
                 }
             }
         });

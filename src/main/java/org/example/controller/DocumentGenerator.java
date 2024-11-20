@@ -283,43 +283,49 @@ public class DocumentGenerator {
         }
     }
 
-    public void selectOrCreateCSV() {
-        FileDialog fileDialog = new FileDialog((Frame) null, "Выберите существующий файл tags.csv или создайте новый", FileDialog.LOAD);
-        fileDialog.setFile("*.csv");
-        fileDialog.setVisible(true);
-
-        String selectedFile = fileDialog.getFile();
-        String directory = fileDialog.getDirectory();
-
-        if (selectedFile != null && directory != null) {
-            File csvFile = new File(directory, selectedFile);
-            if (csvFile.exists()) {
-                List<String> missingTags = tagExtractor.verifyTagsInCSV(selectedFiles, csvFile);
-
-                if (!missingTags.isEmpty()) {
-                    // Формируем строку с каждым тегом на новой строке
-                    String errorMessage = "Отсутствующие теги:\n" + String.join("\n", missingTags);
-                    JTextArea textArea = new JTextArea(errorMessage);
-                    textArea.setEditable(false); // Запрет редактирования
-                    textArea.setLineWrap(false); // Отключаем перенос строк
-                    JScrollPane scrollPane = new JScrollPane(textArea);
-                    scrollPane.setPreferredSize(new Dimension(400, 300)); // Размер окна с прокруткой
-
-                    // Выводим сообщение с прокруткой
-                    JOptionPane.showMessageDialog(null, scrollPane, "Ошибка: вы выбрали таблицу с недостающими тегами!", JOptionPane.ERROR_MESSAGE);
-                    return; // Прерываем выполнение, если теги отсутствуют
-                }
-                // Если все теги на месте, загружаем CSV
-                tagMap = new TagMap();
-                csvFilePath = csvFile.getAbsolutePath();
-            }
-        } else {
+    public void selectOrCreateCSV(boolean createNew) {
+        if (createNew) {
+            // Создание новой таблицы
             createNewCSV();
             csvFilePath = outputFolderPath + File.separator + "tags.csv";
             // Открытие папки с таблицей для последующего редактирования
             openCSVFile(csvFilePath);
+        } else {
+            // Выбор существующей таблицы
+            FileDialog fileDialog = new FileDialog((Frame) null, "Выберите существующий файл tags.csv", FileDialog.LOAD);
+            fileDialog.setFile("*.csv");
+            fileDialog.setVisible(true);
+
+            String selectedFile = fileDialog.getFile();
+            String directory = fileDialog.getDirectory();
+
+            if (selectedFile != null && directory != null) {
+                File csvFile = new File(directory, selectedFile);
+                if (csvFile.exists()) {
+                    // Проверка тегов
+                    List<String> missingTags = tagExtractor.verifyTagsInCSV(selectedFiles, csvFile);
+
+                    if (!missingTags.isEmpty()) {
+                        // Формируем строку с каждым тегом на новой строке
+                        String errorMessage = "Отсутствующие теги:\n" + String.join("\n", missingTags);
+                        JTextArea textArea = new JTextArea(errorMessage);
+                        textArea.setEditable(false); // Запрет редактирования
+                        textArea.setLineWrap(false); // Отключаем перенос строк
+                        JScrollPane scrollPane = new JScrollPane(textArea);
+                        scrollPane.setPreferredSize(new Dimension(400, 300)); // Размер окна с прокруткой
+
+                        // Выводим сообщение с прокруткой
+                        JOptionPane.showMessageDialog(null, scrollPane, "Ошибка: вы выбрали таблицу с недостающими тегами!", JOptionPane.ERROR_MESSAGE);
+                        return; // Прерываем выполнение, если теги отсутствуют
+                    }
+                    // Если все теги на месте, загружаем CSV
+                    tagMap = new TagMap();
+                    csvFilePath = csvFile.getAbsolutePath();
+                }
+            }
         }
     }
+
 
     private void createNewCSV() {
         tagExtractor.writeTagsToCSV(selectedFiles, outputFolderPath);

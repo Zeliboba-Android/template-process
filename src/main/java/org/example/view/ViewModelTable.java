@@ -14,6 +14,8 @@ public class ViewModelTable extends JPanel {
     private DocumentGenerator documentGenerator;
     public JButton generateButtonUsingTable;
     private JButton buttonBackSpace;
+    public JButton createCSVButton;
+    public JButton selectCSVButton;
     private JComboBox<String> selectFilesForTableComboBox;
     private ViewModelTextFields viewModelTextFields;
     private JLabel fileLabel;
@@ -34,23 +36,27 @@ public class ViewModelTable extends JPanel {
     }
 
     private void initializeTable() {
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT)); // Выравнивание кнопки слева
+        buttonPanel.setOpaque(false);
         buttonBackSpace = new JButton();
         buttonBackSpace.setText("⬅");
         Font font = buttonBackSpace.getFont();
         ViewStyles.styleButton(buttonBackSpace);
         buttonBackSpace.setFont(font.deriveFont(Font.PLAIN, 32));
-        buttonBackSpace.setBounds(5, 5, 100, 70);  // Устанавливаем фиксированные размеры
+        buttonBackSpace.setPreferredSize(new Dimension(100, 70));  // Устанавливаем фиксированные размеры
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 main.switchToPanel(viewModelStartScreen);
             }
         });
-        add(buttonBackSpace);
+        buttonPanel.add(buttonBackSpace);
+        add(buttonPanel, BorderLayout.PAGE_START);
 
         // Инициализация contentPanel
         contentPanel = new JPanel();
         contentPanel.setLayout(new GridBagLayout());
+        contentPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 0, 10, 0);
         gbc.anchor = GridBagConstraints.CENTER;
@@ -65,7 +71,7 @@ public class ViewModelTable extends JPanel {
         fileLabel = new JLabel("Файл(ы) не выбран(ы):");
         fileLabel.setPreferredSize(new Dimension(400, 30));
         ViewStyles.styleLabel(fileLabel);
-        gbc.gridy = 2;
+        gbc.gridy = 4;
         contentPanel.add(fileLabel, gbc);
 
         // Кнопка генерации
@@ -79,8 +85,33 @@ public class ViewModelTable extends JPanel {
                 documentGenerator.generateDocument();
             }
         });
-        gbc.gridy = 1;
+        gbc.gridy = 3;
         contentPanel.add(generateButtonUsingTable, gbc);
+        createCSVButton = new JButton("Генерация с помощью новой таблицы");
+        createCSVButton.setPreferredSize(COMPONENT_SIZE);
+        createCSVButton.setEnabled(false);
+        ViewStyles.styleButton(createCSVButton);
+        createCSVButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                documentGenerator.selectOrCreateCSV(true);
+            }
+        });
+        gbc.gridy = 1;
+        contentPanel.add(createCSVButton, gbc);
+        selectCSVButton = new JButton("Генерация с помощью существующей таблицы");
+        selectCSVButton.setPreferredSize(COMPONENT_SIZE);
+        selectCSVButton.setEnabled(false);
+        ViewStyles.styleButton(selectCSVButton);
+        selectCSVButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                documentGenerator.selectOrCreateCSV(false);
+            }
+        });
+        gbc.gridy = 2;
+        contentPanel.add(selectCSVButton, gbc);
+
 
         add(contentPanel, BorderLayout.CENTER); // Добавляем панель с остальными компонентами в центр
     }
@@ -98,7 +129,7 @@ public class ViewModelTable extends JPanel {
         // Добавляем ComboBox в contentPanel с корректными GridBagConstraints
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 0, 10, 0);
-        gbc.gridy = 3;  // Убедитесь, что позиция соответствует другим элементам
+        gbc.gridy = 5;  // Убедитесь, что позиция соответствует другим элементам
         gbc.anchor = GridBagConstraints.CENTER;
         contentPanel.add(selectFilesForTableComboBox, gbc);
 

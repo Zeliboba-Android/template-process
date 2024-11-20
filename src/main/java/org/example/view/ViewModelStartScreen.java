@@ -36,8 +36,6 @@ public class ViewModelStartScreen extends JPanel {
     // Константы для одинакового размера компонентов
     private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
     private static final Dimension LABEL_SIZE = new Dimension((int)(250 * 1.4), (int)(50 * 1.4)); // Размер надписи
-    private static final Dimension IMAGE_SIZE = new Dimension((int)(220 * 1.4), (int)(165 * 1.4)); // Размер изображения
-
 
     public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator) {
         this.main = main;
