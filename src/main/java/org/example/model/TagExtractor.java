@@ -27,9 +27,9 @@ public class TagExtractor {
     public TagExtractor(Main main) {
         this.main = main;
         this.pattern = Pattern.compile(regex);
-        this.tagDatabase = new TagDatabase("jdbc:sqlite:tags.db");
-
+        this.tagDatabase = new TagDatabase();
     }
+
     public void writeTagsToCSV(File[] Files, String folderPath) {
         uniqueTags = new HashSet<>();
         csvFilePath = folderPath + File.separator + "tags.csv";
@@ -199,9 +199,9 @@ public class TagExtractor {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFile), "cp1251"))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(";", 2);
-                if (parts.length == 2) {
-                    csvTags.add(parts[0].trim()); // Загружаем тег в set
+                String[] parts = line.split(";", 3);
+                if (parts.length == 3) {
+                    csvTags.add(parts[1].trim()); // Загружаем тег в set
                 }
             }
         } catch (IOException e) {

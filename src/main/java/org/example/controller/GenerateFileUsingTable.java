@@ -15,7 +15,7 @@ public class GenerateFileUsingTable {
     private TagDatabase tagDatabase;
     GenerateFileUsingTable(TagMap tagMap, String csvFilePath) {
         this.tagMap = tagMap;
-        this.tagDatabase = new TagDatabase("jdbc:sqlite:tags.db");
+        this.tagDatabase = new TagDatabase();
         // Путь к CSV файлу с данными
         try (// Укажите правильную кодировку вашего файла CSV
              BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFilePath),"cp1251"));

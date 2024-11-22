@@ -1,14 +1,17 @@
 package org.example.model;
 
+import org.example.main.Main;
+
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.net.URISyntaxException;
 import java.sql.*;
 
 public class TagDatabase {
     private Connection connection;
-
-    public TagDatabase(String dbUrl) {
+    public TagDatabase() {
         try {
-            connection = DriverManager.getConnection(dbUrl);
+            connection = DriverManager.getConnection("jdbc:sqlite:tags.db");
             initializeDatabase();
         } catch (SQLException e) {
             e.printStackTrace();

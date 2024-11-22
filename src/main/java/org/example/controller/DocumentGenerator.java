@@ -32,6 +32,7 @@ public class DocumentGenerator {
     private String outputFolderPath;
     public File[] selectedFiles;
     private String csvFilePath;
+
     public DocumentGenerator(Main main) {
         this.main = main;
         tagMap = new TagMap();
@@ -113,10 +114,10 @@ public class DocumentGenerator {
         }
     }
 
-    private void chooseFillTag(){
-        if (main.viewModelStartScreen.verification){
+    private void chooseFillTag() {
+        if (main.viewModelStartScreen.verification) {
             fillTags();
-        }else {
+        } else {
             generateFileUsingTable = new GenerateFileUsingTable(tagMap, csvFilePath);
             generateFileUsingTable.fillTagsUsingTable();
         }
@@ -124,6 +125,9 @@ public class DocumentGenerator {
 
     public void generateDocument() {
         chooseFillTag();
+        if (!checkTagValues()) {
+            return;
+        }
         // Создаем изменяемый список для хранения файлов, которые нужно обработать
         List<File> filesToProcess = new ArrayList<>(List.of(selectedFiles));
         int countAuthors = main.viewModelStartScreen.selectedNumber;
@@ -132,7 +136,7 @@ public class DocumentGenerator {
             additionalAuthors = new Authors(countAuthors);
             fillAddAuthorsTags();
             Iterator<File> iterator = filesToProcess.iterator();
-            while (iterator.hasNext()){
+            while (iterator.hasNext()) {
                 File file = iterator.next();
                 String fileName = file.getName();
                 if (fileName.contains("main")) {
@@ -141,8 +145,7 @@ public class DocumentGenerator {
                     combinedTagMap.combineTags(additionalAuthors.getMainTagMap());
                     replaceText(file, combinedTagMap, fileName.replace("main_", "1_"));
                     iterator.remove();
-                }
-                else if (fileName.contains("additional")) {
+                } else if (fileName.contains("additional")) {
                     // Обрабатываем дополнительные файлы для остальных авторов
                     for (int i = 1; i < additionalAuthors.getTagMaps().size(); i += 3) {
                         TagMap additionalTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
@@ -162,7 +165,7 @@ public class DocumentGenerator {
                     multiAuthors = new Authors(countAuthors);
                     fillMultiAuthorsTags();
                     // Обрабатываем файлы, которые должны генерироваться для каждых авторов
-                    for (int i = 0; i < countAuthors; i++){
+                    for (int i = 0; i < countAuthors; i++) {
                         TagMap multiTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
                         multiTagMap.combineTags(multiAuthors.getTagMapByIndex(i));
                         replaceText(file, multiTagMap, fileName.replace("multi_", (i + 1) + "_"));
@@ -171,7 +174,7 @@ public class DocumentGenerator {
                 }
             }
         }
-        for (File file: filesToProcess){
+        for (File file : filesToProcess) {
             replaceText(file, tagMap, file.getName());
         }
 
@@ -184,7 +187,7 @@ public class DocumentGenerator {
         openFolder(outputFolderPath);
     }
 
-    private void replaceText(File file, TagMap tags, String authorPrefix){
+    private void replaceText(File file, TagMap tags, String authorPrefix) {
         String fileName = file.getName();
         try {
             // Проверка наличия пустых значений в TagMap
@@ -194,11 +197,9 @@ public class DocumentGenerator {
                 if (fileName.endsWith(".doc")) {
                     WordDOC wordDOC = new WordDOC(tags, file);
                     wordDOC.changeFile(newFilePath);
-                    System.out.println("Файл " + fileName + " успешно изменен");
                 } else if (fileName.endsWith(".docx")) {
                     WordDOCX wordDOCX = new WordDOCX(tags, file);
                     wordDOCX.changeFile(newFilePath);
-                    System.out.println("Файл " + fileName + " успешно изменен");
                 } else
                     System.out.println("Файл " + fileName + " не формата doc/docx");
             } else {
@@ -234,7 +235,7 @@ public class DocumentGenerator {
     // Метод конвертации DOCX в PDF
     public static void convertDocxToPdf(String docPath, String pdfPath) {
         IConverter converter = null;
-        try  {
+        try {
             InputStream docxInputStream = new FileInputStream(docPath);
             OutputStream outputStream = new FileOutputStream(pdfPath);
             converter = LocalConverter.builder().build();
@@ -256,7 +257,7 @@ public class DocumentGenerator {
         boolean hasEmptyValues = false;
         for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
             String value = entry.getValue();
-            if (value == null ||value.isEmpty()) {
+            if (value == null || value.isEmpty()) {
                 // Обработка пустого значения
                 System.out.println("Пустое значение для ключа: " + entry.getKey());
                 hasEmptyValues = true;
@@ -276,7 +277,7 @@ public class DocumentGenerator {
         // Создаем папку
         File outputFolder = new File(outputFolderPath);
         if (outputFolder.mkdirs()) {
-            if (isConvertToPdfSelected()){
+            if (isConvertToPdfSelected()) {
                 new File(outputFolder, "PDF").mkdir();
             }
             new File(outputFolder, "Word").mkdir();
@@ -332,7 +333,7 @@ public class DocumentGenerator {
     }
 
     // Метод для открытия папки после генерации документов
-    private void openFolder(String outputFolderPath){
+    private void openFolder(String outputFolderPath) {
         try {
             Desktop.getDesktop().open(new File(outputFolderPath));
         } catch (IOException e) {
@@ -350,6 +351,28 @@ public class DocumentGenerator {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // Проверяем значения для специфичных тегов
+    public boolean checkTagValues() {
+        List<String> invalidTags = new ArrayList<>();
+        for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
+            String tag = entry.getKey();
+            String value = entry.getValue();
+            if ((tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}"))
+                    && (!value.equals("0") && !value.equals("1"))) {
+                invalidTags.add(tag + ": " + value);
+            }
+        }
+
+        // Если есть ошибки, выводим их все
+        if (!invalidTags.isEmpty()) {
+            String errorMessage = "Ошибка!\nНайдены ошибочные значения в тегах:\n" +
+                    String.join("\n", invalidTags) + "\nПожалуйста, введите 0 или 1.";
+            JOptionPane.showMessageDialog(null, errorMessage, "Ошибка ввода", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
     }
 
 }

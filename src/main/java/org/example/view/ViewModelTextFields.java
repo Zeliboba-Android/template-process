@@ -37,7 +37,7 @@ public class ViewModelTextFields extends JPanel {
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
         this.viewModelTable = viewModelTable;
-        this.tagDatabase = new TagDatabase("jdbc:sqlite:tags.db");
+        this.tagDatabase = new TagDatabase();
         ViewStyles.stylePanel(this);
         setLayout(null);
         setFocusable(true);
@@ -284,6 +284,20 @@ public class ViewModelTextFields extends JPanel {
                 } else {
                     tagValuesMap.put(tag, textField.getText());
                 }
+
+                // Проверка для тегов с чекбоксами
+                if (tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}")) {
+                    String inputText = textField.getText().trim();
+                    if (!inputText.equals("0") && !inputText.equals("1")) {
+                        textField.setBackground(Color.RED); // Изменяем фон на красный при ошибке
+                        JOptionPane.showMessageDialog(null,
+                                "Ошибка: Введите только 0 или 1 для тега " + tag,
+                                "Ошибка ввода", JOptionPane.ERROR_MESSAGE);
+                        textField.requestFocus(); // Фокус на поле для исправления
+                    } else {
+                        textField.setBackground(Color.WHITE); // Восстанавливаем стандартный фон
+                    }
+                }
             }
         });
     }
@@ -302,6 +316,7 @@ public class ViewModelTextFields extends JPanel {
         JTextField[] textFields = new JTextField[tags.size()];
 
         for (int i = 0; i < tags.size(); i++) {
+            int currentIndex = i;
             textFields[i] = new JTextField();
             textFields[i].setBounds(padding, topPadding + i * 40, textFieldPanel.getWidth() - 2 * padding, 30); // Учет отступов
             String tag = tags.get(i);
@@ -313,6 +328,22 @@ public class ViewModelTextFields extends JPanel {
                 textFields[i].setText(tagValuesMap.get(tag));
                 textFields[i].setForeground(Color.BLACK);
             }
+
+            // Добавляем KeyListener для перемещения между полями
+            textFields[i].addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_UP) { // Стрелка вверх
+                        if (currentIndex > 0) {
+                            textFields[currentIndex - 1].requestFocus(); // Переход к предыдущему полю
+                        }
+                    } else if (e.getKeyCode() == KeyEvent.VK_DOWN) { // Стрелка вниз
+                        if (currentIndex < textFields.length - 1) {
+                            textFields[currentIndex + 1].requestFocus(); // Переход к следующему полю
+                        }
+                    }
+                }
+            });
 
             // Добавляем DocumentListener для обновления состояния кнопки генерации
             textFields[i].getDocument().addDocumentListener(new DocumentListener() {
