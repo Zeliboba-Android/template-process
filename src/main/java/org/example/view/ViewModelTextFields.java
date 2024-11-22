@@ -104,8 +104,6 @@ public class ViewModelTextFields extends JPanel {
         }
     }
 
-
-
     private boolean areAllTextFieldsFilled() {
         for (JTextField textField : findTextFields()) {
             String placeholder = (String) textField.getClientProperty("placeholder"); // Получаем плейсхолдер
@@ -230,6 +228,7 @@ public class ViewModelTextFields extends JPanel {
         scrollPane = new JScrollPane(textFieldPanel);
         scrollPane.setBounds(70, 125, 300, 360); // Устанавливаем фиксированные размеры
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         ViewStyles.styleScrollBar(scrollPane.getVerticalScrollBar());
         add(scrollPane);
 
@@ -240,6 +239,7 @@ public class ViewModelTextFields extends JPanel {
         scrollPaneButton = new JScrollPane(buttonPanel);
         scrollPaneButton.setBounds(450, 125, 400, 360); // Устанавливаем фиксированные размеры
         scrollPaneButton.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        scrollPaneButton.getVerticalScrollBar().setUnitIncrement(16);
         ViewStyles.styleScrollBar(scrollPaneButton.getVerticalScrollBar());
         add(scrollPaneButton);
     }
@@ -302,10 +302,6 @@ public class ViewModelTextFields extends JPanel {
         });
     }
 
-
-
-
-
     // Способ динамической генерации текстовых полей тегов с заполнителями
     private void generateTextFields(List<String> tags) {
         textFieldPanel.removeAll();
@@ -329,21 +325,25 @@ public class ViewModelTextFields extends JPanel {
                 textFields[i].setForeground(Color.BLACK);
             }
 
-            // Добавляем KeyListener для перемещения между полями
             textFields[i].addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent e) {
                     if (e.getKeyCode() == KeyEvent.VK_UP) { // Стрелка вверх
                         if (currentIndex > 0) {
-                            textFields[currentIndex - 1].requestFocus(); // Переход к предыдущему полю
+                            JTextField previousField = textFields[currentIndex - 1];
+                            previousField.requestFocus(); // Переход к предыдущему полю
+                            fieldVisibility(previousField);
                         }
                     } else if (e.getKeyCode() == KeyEvent.VK_DOWN) { // Стрелка вниз
                         if (currentIndex < textFields.length - 1) {
-                            textFields[currentIndex + 1].requestFocus(); // Переход к следующему полю
+                            JTextField nextField = textFields[currentIndex + 1];
+                            nextField.requestFocus(); // Переход к следующему полю
+                            fieldVisibility(nextField);
                         }
                     }
                 }
             });
+
 
             // Добавляем DocumentListener для обновления состояния кнопки генерации
             textFields[i].getDocument().addDocumentListener(new DocumentListener() {
@@ -398,8 +398,6 @@ public class ViewModelTextFields extends JPanel {
         scrollPaneButton.revalidate();
         scrollPaneButton.repaint();
     }
-
-
 
     private void generateFileButtons(HashMap<String, List<String>> fileTagMap) {
         buttonPanel.removeAll();
@@ -466,13 +464,19 @@ public class ViewModelTextFields extends JPanel {
         }
     }
 
-
-
     private List<String> getAllTags(HashMap<String, List<String>> fileTagMap) {
         Set<String> allTags = new HashSet<>();
         for (List<String> tags : fileTagMap.values()) {
             allTags.addAll(tags);
         }
         return new ArrayList<>(allTags);
+    }
+
+    // Обеспечение видимости поля ввода
+    private void fieldVisibility(JTextField field){
+        SwingUtilities.invokeLater(() -> {
+            field.scrollRectToVisible(field.getBounds()); // Прокрутка к полю
+            scrollPane.getViewport().setViewPosition(new Point(0, field.getY())); // Принудительное обновление позиции
+        });
     }
 }

@@ -11,7 +11,7 @@ public class TagDatabase {
     private Connection connection;
     public TagDatabase() {
         try {
-            connection = DriverManager.getConnection("jdbc:sqlite:tags.db");
+            connection = DriverManager.getConnection("jdbc:sqlite::resource:tags.db");
             initializeDatabase();
         } catch (SQLException e) {
             e.printStackTrace();
