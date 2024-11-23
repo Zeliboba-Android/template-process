@@ -278,17 +278,19 @@ public class ViewModelTextFields extends JPanel {
 
             @Override
             public void focusLost(FocusEvent e) {
-                if (textField.getText().isEmpty()) {
+                String inputText = textField.getText().trim();
+
+                // Если поле пустое, сохраняем плейсхолдер как значение
+                if (inputText.isEmpty()) {
                     textField.setForeground(Color.GRAY);
                     textField.setText(finalPlaceholder);
                 } else {
-                    tagValuesMap.put(tag, textField.getText());
+                    tagValuesMap.put(tag, inputText); // Сохраняем введенное значение
                 }
 
                 // Проверка для тегов с чекбоксами
                 if (tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}")) {
-                    String inputText = textField.getText().trim();
-                    if (!inputText.equals("0") && !inputText.equals("1")) {
+                    if (!inputText.isEmpty() && !inputText.equals("0") && !inputText.equals("1")) {
                         textField.setBackground(Color.RED); // Изменяем фон на красный при ошибке
                         JOptionPane.showMessageDialog(null,
                                 "Ошибка: Введите только 0 или 1 для тега " + tag,
