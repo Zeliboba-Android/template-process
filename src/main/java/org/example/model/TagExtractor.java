@@ -18,7 +18,7 @@ public class TagExtractor {
     private final String regex = "\\$\\{[^}]+\\}";
     private Pattern pattern;
     private List<String> tags = new ArrayList<>();
-    public Set<String> uniqueTags = new HashSet<>();
+    private Set<String> uniqueTags = new HashSet<>();
     public String csvFilePath;
     private HashMap<String, List<String>> fileTagMap = new HashMap<>();
     private Main main;
@@ -30,9 +30,8 @@ public class TagExtractor {
         this.tagDatabase = new TagDatabase();
     }
 
-    public void writeTagsToCSV(File[] Files, String folderPath) {
+    public void writeTagsToCSV(File[] Files, String csvFilePath) {
         uniqueTags = new HashSet<>();
-        csvFilePath = folderPath + File.separator + "tags.csv";
         Pattern pattern = Pattern.compile(regex);
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(csvFilePath, true), "cp1251")))) {
@@ -61,8 +60,8 @@ public class TagExtractor {
         }
     }
 
-    public Set<String> writeTagsToSet(File[] files) {
-        uniqueTags = new HashSet<>();
+    private Set<String> writeTagsToSet(File[] files) {
+        Set<String> uniqueTags = new HashSet<>();
         Pattern pattern = Pattern.compile(regex);
         for (File file : files) {
             if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
@@ -178,20 +177,6 @@ public class TagExtractor {
         return text.toString();
     }
 
-    public void loadTagsFromCSV(File csvFile) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFile), "cp1251"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(";", 2);
-                if (parts.length == 2) {
-                    uniqueTags.add(parts[0].trim()); // Загружаем тег в set уникальных тегов
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public List<String> verifyTagsInCSV(File[] files, File csvFile) {
         Set<String> documentTags = writeTagsToSet(files); // Получаем теги из документов
         Set<String> csvTags = new HashSet<>();
@@ -219,4 +204,7 @@ public class TagExtractor {
         return missingTags;
     }
 
+    public Set<String> getUniqueTags() {
+        return uniqueTags;
+    }
 }

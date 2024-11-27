@@ -3,18 +3,22 @@ package org.example.view;
 import org.example.controller.DocumentGenerator;
 import org.example.main.Main;
 import org.example.model.TagDatabase;
+import org.example.model.TagExtractor;
+import org.example.model.TagMap;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.List;
 import java.util.*;
 
 public class ViewModelTextFields extends JPanel {
     private Main main;
     private DocumentGenerator documentGenerator;
+    private TagExtractor tagExtractor;
     private JButton generateButton;
     public JButton buttonBackSpace;
     public JButton chooseFileButton;
@@ -30,6 +34,8 @@ public class ViewModelTextFields extends JPanel {
     private HashMap<String, List<String>> fileTagMap;
     private Map<String, String> tagValuesMap; // Map to store tag values
     private TagDatabase tagDatabase; // Database instance
+    private File[] selectedFiles;
+    private TagMap tagMap;
     private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
 
     ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable) {
@@ -38,6 +44,7 @@ public class ViewModelTextFields extends JPanel {
         this.documentGenerator = documentGenerator;
         this.viewModelTable = viewModelTable;
         this.tagDatabase = new TagDatabase();
+        this.tagExtractor = documentGenerator.tagExtractor;
         ViewStyles.stylePanel(this);
         setLayout(null);
         setFocusable(true);
@@ -148,49 +155,58 @@ public class ViewModelTextFields extends JPanel {
         chooseFileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                removeTextFields();
-                tagValuesMap.clear();
                 FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
                 fileDialog.setFile("*.doc;*.docx");
                 fileDialog.setMultipleMode(true);
                 fileDialog.setVisible(true);
-                documentGenerator.selectedFiles = fileDialog.getFiles();
+                File[] newSelectedFiles = fileDialog.getFiles();
 
-                if (documentGenerator.selectedFiles != null && documentGenerator.selectedFiles.length > 0) {
-                    chooseFileLabel.setText("Выбранные файлы: ");
-                    viewModelStartScreen.select = new String[documentGenerator.selectedFiles.length];
-                    for (int i = 0; i < documentGenerator.selectedFiles.length; i++) {
-                        viewModelStartScreen.select[i] = documentGenerator.selectedFiles[i].getName();
-                    }
+                // Если выбор не произведен (массив пуст или null), сохраняем предыдущие выбранные файлы
+                if (newSelectedFiles == null || newSelectedFiles.length == 0) {
+                    JOptionPane optionPane = new JOptionPane(
+                            "Выбор файлов не изменён.",
+                            JOptionPane.INFORMATION_MESSAGE,
+                            JOptionPane.DEFAULT_OPTION
+                    );
 
-                    // Обновить поле со списком в ViewModelTable
-                    if (viewModelTable != null) {
-                        viewModelTable.clearComboBox();
-                        viewModelTable.updateComboBox(viewModelStartScreen.select);
-                        viewModelTable.getFileLabel().setText("Выбранные файлы: ");
-                        viewModelTable.generateButtonUsingTable.setEnabled(true);
-                        viewModelTable.createCSVButton.setEnabled(true);
-                        viewModelTable.selectCSVButton.setEnabled(true);
-                    }
+                    // Стилизуем окно с сообщением
+                    ViewStyles.styleOptionPane(optionPane);
+
+                    // Создаем и стилизуем диалог
+                    JDialog dialog = optionPane.createDialog(null, "Информация");
+                    dialog.setVisible(true);
+
+                    return;
                 }
-                documentGenerator.createFolder();
-                if (viewModelStartScreen.verification) {
-                    fileTagMap = documentGenerator.tagExtractor.writeTagsToMap(documentGenerator.selectedFiles);
-                    generateFileButtons(fileTagMap);
-                    generateTextFields(getAllTags(fileTagMap));
+
+                // Если выбор был произведён, обновляем массив и остальные элементы
+                selectedFiles = newSelectedFiles;
+                removeTextFields();
+                removeFileButtons();
+                tagValuesMap.clear();
+
+                chooseFileLabel.setText("Выбранные файлы: ");
+                viewModelStartScreen.select = new String[selectedFiles.length];
+                for (int i = 0; i < selectedFiles.length; i++) {
+                    viewModelStartScreen.select[i] = selectedFiles[i].getName();
                 }
+                fileTagMap = documentGenerator.tagExtractor.writeTagsToMap(selectedFiles);
+                generateFileButtons(fileTagMap);
+                generateTextFields(getAllTags(fileTagMap));
             }
         });
         add(chooseFileButton);
-        clearButton = new JButton("Очистить всё");
+        clearButton = new JButton("Очистить ввод");
         ViewStyles.styleButton(clearButton);
         clearButton.setBounds(500, 80, 100, 50);
         clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                removeTextFields();
-                removeFileButtons();
-                chooseFileLabel.setText("Файлы не выбраны");
+//                removeTextFields();
+//                removeFileButtons();
+                clearTextFields();
+                tagValuesMap.clear();
+//                chooseFileLabel.setText("Файлы не выбраны");
                 generateButton.setEnabled(false);
                 revalidate();
                 repaint();
@@ -209,14 +225,12 @@ public class ViewModelTextFields extends JPanel {
                 if (showAllTagsButton != null) {
                     showAllTagsButton.doClick();  // Имитируем нажатие на кнопку "Показать все теги"
                 }
-
                 // Генерируем документ
-                documentGenerator.generateDocument();
+                fillTagsAndCallGeneration();
 
                 // Очищаем текстовые поля
-                clearTextFields();
-
-                tagValuesMap.clear();
+//                clearTextFields();
+//                tagValuesMap.clear();
             }
         });
         add(generateButton);
@@ -424,7 +438,7 @@ public class ViewModelTextFields extends JPanel {
         });
 
         // Добавляем кнопку "Показать все теги"
-        if (documentGenerator.selectedFiles.length != 0)
+        if (selectedFiles.length != 0)
             buttonPanel.add(showAllTagsButton);
         buttonPanel.add(Box.createVerticalStrut(10));  // 10 пикселей отступа
         // Кнопки для конкретных файлов
@@ -461,7 +475,6 @@ public class ViewModelTextFields extends JPanel {
     private void clearTextFields() {
         for (JTextField textField : findTextFields()) {
             textField.setText(""); // Очищаем текстовое поле
-            textField.setForeground(Color.GRAY); // Возвращаем цвет плейсхолдера
             textField.setText((String) textField.getClientProperty("placeholder")); // Устанавливаем плейсхолдер
         }
     }
@@ -480,5 +493,41 @@ public class ViewModelTextFields extends JPanel {
             field.scrollRectToVisible(field.getBounds()); // Прокрутка к полю
             scrollPane.getViewport().setViewPosition(new Point(0, field.getY())); // Принудительное обновление позиции
         });
+    }
+
+    // Функция заполнения значений тегов
+    private void fillTags() {
+        // Получаем список тегов
+        Set<String> tags = tagExtractor.getUniqueTags();
+        // Получаем список всех текстовых полей из ViewModel
+        List<JTextField> textFields = findTextFields();
+        // Проверяем, что количество текстовых полей соответствует количеству тегов
+        if (textFields.size() != tags.size()) {
+            System.out.println(textFields.size());
+            System.out.println(tags.size());
+            System.out.println("Количество текстовых полей не соответствует количеству тегов.");
+            return; // Возможно, стоит бросить исключение здесь
+        }
+        // Очищаем TagMap перед заполнением новыми значениями
+        tagMap = new TagMap();
+        // Проходим по всем текстовым полям и соответствующим тегам
+        Iterator<String> tagsIterator = tags.iterator();
+        for (JTextField textField : textFields) {
+            if (tagsIterator.hasNext()) {
+                String tag = tagsIterator.next(); // Получаем текущий тег
+                String value = textField.getText(); // Получаем значение из соответствующего текстового поля
+                // Добавляем тег и его значение в TagMap
+                tagMap.addTag(tag, value);
+            }
+        }
+    }
+
+    private void fillTagsAndCallGeneration() {
+        // Вызываем метод создания основной папки
+        documentGenerator.createFolder();
+        // Заполнение тегов
+        fillTags();
+        // Генерируем документ
+        documentGenerator.generateDocument(tagMap, selectedFiles);
     }
 }

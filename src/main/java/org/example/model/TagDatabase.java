@@ -1,10 +1,5 @@
 package org.example.model;
 
-import org.example.main.Main;
-
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.net.URISyntaxException;
 import java.sql.*;
 
 public class TagDatabase {

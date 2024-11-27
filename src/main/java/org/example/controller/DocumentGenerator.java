@@ -23,20 +23,19 @@ import static org.example.view.ViewModelStartScreen.isConvertToPdfSelected;
  */
 public class DocumentGenerator {
     private Main main;
-    private GenerateFileUsingTable generateFileUsingTable;
     private Authors additionalAuthors;
     private Authors multiAuthors;
     public TagExtractor tagExtractor;
-    private TagMap tagMap;
     private TagMap copyTagMap = new TagMap();
     private String outputFolderPath;
-    public File[] selectedFiles;
-    private String csvFilePath;
 
     public DocumentGenerator(Main main) {
         this.main = main;
-        tagMap = new TagMap();
         tagExtractor = new TagExtractor(this.main);
+    }
+
+    public String getOutputFolderPath() {
+        return outputFolderPath;
     }
 
     private void fillAddAuthorsTags() {
@@ -87,92 +86,12 @@ public class DocumentGenerator {
         return Integer.parseInt(indexStr) - 1;
     }
 
-    // функция заполнения значений тегов
-    private void fillTags() {
-        // Получаем список тегов
-        Set<String> tags = tagExtractor.uniqueTags;
-        // Получаем список всех текстовых полей из ViewModel
-        List<JTextField> textFields = main.viewModelStartScreen.viewModelTextFields.findTextFields();
-        // Проверяем, что количество текстовых полей соответствует количеству тегов
-        if (textFields.size() != tags.size()) {
-            System.out.println(textFields.size());
-            System.out.println(tags.size());
-            System.out.println("Количество текстовых полей не соответствует количеству тегов.");
-            return; // Возможно, стоит бросить исключение здесь
-        }
-        // Очищаем TagMap перед заполнением новыми значениями
-        tagMap = new TagMap();
-        // Проходим по всем текстовым полям и соответствующим тегам
-        Iterator<String> tagsIterator = tags.iterator();
-        for (JTextField textField : textFields) {
-            if (tagsIterator.hasNext()) {
-                String tag = tagsIterator.next(); // Получаем текущий тег
-                String value = textField.getText(); // Получаем значение из соответствующего текстового поля
-                // Добавляем тег и его значение в TagMap
-                tagMap.addTag(tag, value);
-            }
-        }
-    }
-
-    private void chooseFillTag() {
-        if (main.viewModelStartScreen.verification) {
-            fillTags();
-        } else {
-            generateFileUsingTable = new GenerateFileUsingTable(tagMap, csvFilePath);
-            generateFileUsingTable.fillTagsUsingTable();
-        }
-    }
-
-    public void generateDocument() {
-        chooseFillTag();
-        if (!checkTagValues()) {
-            return;
-        }
+    public void generateDocument(TagMap tagMap, File[] selectedFiles) {
         // Создаем изменяемый список для хранения файлов, которые нужно обработать
         List<File> filesToProcess = new ArrayList<>(List.of(selectedFiles));
         int countAuthors = main.viewModelStartScreen.selectedNumber;
         if (countAuthors > 1) {
-            copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
-            additionalAuthors = new Authors(countAuthors);
-            fillAddAuthorsTags();
-            Iterator<File> iterator = filesToProcess.iterator();
-            while (iterator.hasNext()) {
-                File file = iterator.next();
-                String fileName = file.getName();
-                if (fileName.contains("main")) {
-                    // Объединяем теги первого автора и общие теги
-                    TagMap combinedTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
-                    combinedTagMap.combineTags(additionalAuthors.getMainTagMap());
-                    replaceText(file, combinedTagMap, fileName.replace("main_", "1_"));
-                    iterator.remove();
-                } else if (fileName.contains("additional")) {
-                    // Обрабатываем дополнительные файлы для остальных авторов
-                    for (int i = 1; i < additionalAuthors.getTagMaps().size(); i += 3) {
-                        TagMap additionalTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
-                        StringBuilder authorNumbers = new StringBuilder();
-                        for (int j = 0; j < 3; j++) {
-                            if (i + j < additionalAuthors.getTagMaps().size()) {
-                                additionalTagMap.combineTags(additionalAuthors.getTagMapByIndex(i + j));
-                                authorNumbers.append(i + j + 1 + "_");
-                            }
-                        }
-                        replaceText(file, additionalTagMap, fileName.replace("additional_", authorNumbers));
-                    }
-                    iterator.remove();
-                } else if (fileName.contains("multi")) {
-                    copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
-                    // Разбиваем теги по типу "key_ria_authorX..." для каждого автора
-                    multiAuthors = new Authors(countAuthors);
-                    fillMultiAuthorsTags();
-                    // Обрабатываем файлы, которые должны генерироваться для каждых авторов
-                    for (int i = 0; i < countAuthors; i++) {
-                        TagMap multiTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
-                        multiTagMap.combineTags(multiAuthors.getTagMapByIndex(i));
-                        replaceText(file, multiTagMap, fileName.replace("multi_", (i + 1) + "_"));
-                    }
-                    iterator.remove();
-                }
-            }
+            workWithSpecialFiles(filesToProcess, tagMap, countAuthors);
         }
         for (File file : filesToProcess) {
             replaceText(file, tagMap, file.getName());
@@ -187,11 +106,55 @@ public class DocumentGenerator {
         openFolder(outputFolderPath);
     }
 
+    private void workWithSpecialFiles(List<File> filesToProcess, TagMap tagMap, int countAuthors) {
+        copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
+        additionalAuthors = new Authors(countAuthors);
+        fillAddAuthorsTags();
+        Iterator<File> iterator = filesToProcess.iterator();
+        while (iterator.hasNext()) {
+            File file = iterator.next();
+            String fileName = file.getName();
+            if (fileName.contains("main")) {
+                // Объединяем теги первого автора и общие теги
+                TagMap combinedTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+                combinedTagMap.combineTags(additionalAuthors.getMainTagMap());
+                replaceText(file, combinedTagMap, fileName.replace("main_", "1_"));
+                iterator.remove();
+            } else if (fileName.contains("additional")) {
+                // Обрабатываем дополнительные файлы для остальных авторов
+                for (int i = 1; i < additionalAuthors.getTagMaps().size(); i += 3) {
+                    TagMap additionalTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+                    StringBuilder authorNumbers = new StringBuilder();
+                    for (int j = 0; j < 3; j++) {
+                        if (i + j < additionalAuthors.getTagMaps().size()) {
+                            additionalTagMap.combineTags(additionalAuthors.getTagMapByIndex(i + j));
+                            authorNumbers.append(i + j + 1 + "_");
+                        }
+                    }
+                    replaceText(file, additionalTagMap, fileName.replace("additional_", authorNumbers));
+                }
+                iterator.remove();
+            } else if (fileName.contains("multi")) {
+                copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
+                // Разбиваем теги по типу "key_ria_authorX..." для каждого автора
+                multiAuthors = new Authors(countAuthors);
+                fillMultiAuthorsTags();
+                // Обрабатываем файлы, которые должны генерироваться для каждых авторов
+                for (int i = 0; i < countAuthors; i++) {
+                    TagMap multiTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+                    multiTagMap.combineTags(multiAuthors.getTagMapByIndex(i));
+                    replaceText(file, multiTagMap, fileName.replace("multi_", (i + 1) + "_"));
+                }
+                iterator.remove();
+            }
+        }
+    }
+
     private void replaceText(File file, TagMap tags, String authorPrefix) {
         String fileName = file.getName();
         try {
             // Проверка наличия пустых значений в TagMap
-            boolean hasEmptyValues = checkForEmptyValues();
+            boolean hasEmptyValues = checkForEmptyValues(tags);
             if (!hasEmptyValues) {
                 String newFilePath = outputFolderPath + File.separator + "Word" + File.separator + authorPrefix;
                 if (fileName.endsWith(".doc")) {
@@ -217,9 +180,7 @@ public class DocumentGenerator {
         File wordFolder = new File(outputFolderPath, "Word");
         File pdfFolder = new File(outputFolderPath, "PDF");
 
-        if (!pdfFolder.exists()) {
-            pdfFolder.mkdirs();  // Создаем папку PDF, если она не существует
-        }
+        createFolderIfNotExists(pdfFolder);
         // Читаем файлы из папки Word
         File[] wordFiles = wordFolder.listFiles((dir, name) -> name.endsWith(".docx"));
 
@@ -253,7 +214,7 @@ public class DocumentGenerator {
 
     // функция проверяет есть ли в теге что-то или там пусто, или null и выводит соответсвующее сообщение в консоль,
     // а если значение есть, то возвращает false
-    private boolean checkForEmptyValues() {
+    private boolean checkForEmptyValues(TagMap tagMap) {
         boolean hasEmptyValues = false;
         for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
             String value = entry.getValue();
@@ -278,58 +239,10 @@ public class DocumentGenerator {
         File outputFolder = new File(outputFolderPath);
         if (outputFolder.mkdirs()) {
             if (isConvertToPdfSelected()) {
-                new File(outputFolder, "PDF").mkdir();
+                createFolderIfNotExists(new File(outputFolder, "PDF"));
             }
-            new File(outputFolder, "Word").mkdir();
+            createFolderIfNotExists(new File(outputFolder, "Word"));
         }
-    }
-
-    public void selectOrCreateCSV(boolean createNew) {
-        if (createNew) {
-            // Создание новой таблицы
-            createNewCSV();
-            csvFilePath = outputFolderPath + File.separator + "tags.csv";
-            // Открытие папки с таблицей для последующего редактирования
-            openCSVFile(csvFilePath);
-        } else {
-            // Выбор существующей таблицы
-            FileDialog fileDialog = new FileDialog((Frame) null, "Выберите существующий файл tags.csv", FileDialog.LOAD);
-            fileDialog.setFile("*.csv");
-            fileDialog.setVisible(true);
-
-            String selectedFile = fileDialog.getFile();
-            String directory = fileDialog.getDirectory();
-
-            if (selectedFile != null && directory != null) {
-                File csvFile = new File(directory, selectedFile);
-                if (csvFile.exists()) {
-                    // Проверка тегов
-                    List<String> missingTags = tagExtractor.verifyTagsInCSV(selectedFiles, csvFile);
-
-                    if (!missingTags.isEmpty()) {
-                        // Формируем строку с каждым тегом на новой строке
-                        String errorMessage = "Отсутствующие теги:\n" + String.join("\n", missingTags);
-                        JTextArea textArea = new JTextArea(errorMessage);
-                        textArea.setEditable(false); // Запрет редактирования
-                        textArea.setLineWrap(false); // Отключаем перенос строк
-                        JScrollPane scrollPane = new JScrollPane(textArea);
-                        scrollPane.setPreferredSize(new Dimension(400, 300)); // Размер окна с прокруткой
-
-                        // Выводим сообщение с прокруткой
-                        JOptionPane.showMessageDialog(null, scrollPane, "Ошибка: вы выбрали таблицу с недостающими тегами!", JOptionPane.ERROR_MESSAGE);
-                        return; // Прерываем выполнение, если теги отсутствуют
-                    }
-                    // Если все теги на месте, загружаем CSV
-                    tagMap = new TagMap();
-                    csvFilePath = csvFile.getAbsolutePath();
-                }
-            }
-        }
-    }
-
-
-    private void createNewCSV() {
-        tagExtractor.writeTagsToCSV(selectedFiles, outputFolderPath);
     }
 
     // Метод для открытия папки после генерации документов
@@ -341,38 +254,10 @@ public class DocumentGenerator {
         }
     }
 
-    // Метод для открытия файла tags.csv для последующего редактирования
-    private void openCSVFile(String filePath) {
-        try {
-            File csvFile = new File(filePath);
-            if (csvFile.exists()) {
-                Desktop.getDesktop().open(csvFile);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    // Создание папки при ее отсутствии
+    private void createFolderIfNotExists(File folder) {
+        if (!folder.exists()) {
+            folder.mkdirs();
         }
     }
-
-    // Проверяем значения для специфичных тегов
-    public boolean checkTagValues() {
-        List<String> invalidTags = new ArrayList<>();
-        for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
-            String tag = entry.getKey();
-            String value = entry.getValue();
-            if ((tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}"))
-                    && (!value.equals("0") && !value.equals("1"))) {
-                invalidTags.add(tag + ": " + value);
-            }
-        }
-
-        // Если есть ошибки, выводим их все
-        if (!invalidTags.isEmpty()) {
-            String errorMessage = "Ошибка!\nНайдены ошибочные значения в тегах:\n" +
-                    String.join("\n", invalidTags) + "\nПожалуйста, введите 0 или 1.";
-            JOptionPane.showMessageDialog(null, errorMessage, "Ошибка ввода", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-
 }

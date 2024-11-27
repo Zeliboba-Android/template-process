@@ -1,17 +1,27 @@
 package org.example.view;
 
 import org.example.controller.DocumentGenerator;
+import org.example.controller.GenerateFileUsingTable;
 import org.example.main.Main;
+import org.example.model.TagExtractor;
+import org.example.model.TagMap;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class ViewModelTable extends JPanel {
     private Main main;
     private ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
+    private TagExtractor tagExtractor;
+    private GenerateFileUsingTable generateFileUsingTable;
     public JButton generateButtonUsingTable;
     private JButton buttonBackSpace;
     public JButton createCSVButton;
@@ -23,12 +33,17 @@ public class ViewModelTable extends JPanel {
     private static final Dimension COMPONENT_SIZE = new Dimension((int) (300*1.4), (int) (50*1.4));
     // Добавляем contentPanel на уровне класса
     private JPanel contentPanel;
+    private JButton chooseFileButton;
+    private File[] selectedFiles;
+    private String csvFilePath;
 
     ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
         this.main = main;
         this.viewModelTextFields = new ViewModelTextFields(main, viewModelStartScreen, documentGenerator, this);
+        this.tagExtractor = documentGenerator.tagExtractor;
+
         ViewStyles.stylePanel(this);
         setLayout(new BorderLayout()); // Используем BorderLayout для основного компонента
         setFocusable(true);
@@ -62,13 +77,39 @@ public class ViewModelTable extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.NONE;
 
-        // Кнопка выбора файла из ViewModelTextFields
-        viewModelTextFields.chooseFileButton.setPreferredSize(COMPONENT_SIZE);
+        chooseFileButton = new JButton("Выбор файлов (doc/docx)");
+        chooseFileButton.setPreferredSize(COMPONENT_SIZE);
+        ViewStyles.styleButton(chooseFileButton);
+        chooseFileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
+                fileDialog.setFile("*.doc;*.docx");
+                fileDialog.setMultipleMode(true);
+                fileDialog.setVisible(true);
+                selectedFiles = fileDialog.getFiles();
+//                documentGenerator.setSelectedFiles(fileDialog.getFiles());
+//                selectedFiles = documentGenerator.getSelectedFiles();
+
+                if (selectedFiles != null && selectedFiles.length > 0) {
+                    viewModelStartScreen.select = new String[selectedFiles.length];
+                    for (int i = 0; i < selectedFiles.length; i++) {
+                        viewModelStartScreen.select[i] = selectedFiles[i].getName();
+                    }
+                    clearComboBox();
+                    updateComboBox(viewModelStartScreen.select);
+                    getFileLabel().setText("Выбранные файлы: ");
+                    generateButtonUsingTable.setEnabled(true);
+                    createCSVButton.setEnabled(true);
+                    selectCSVButton.setEnabled(true);
+                }
+            }
+        });
         gbc.gridy = 0;
-        contentPanel.add(viewModelTextFields.chooseFileButton, gbc);
+        contentPanel.add(chooseFileButton, gbc);
 
         // Метка для отображения выбранного файла
-        fileLabel = new JLabel("Файл(ы) не выбран(ы):");
+        fileLabel = new JLabel("Файл(ы) не выбран(ы)!");
         fileLabel.setPreferredSize(new Dimension(400, 30));
         ViewStyles.styleLabel(fileLabel);
         gbc.gridy = 4;
@@ -82,7 +123,7 @@ public class ViewModelTable extends JPanel {
         generateButtonUsingTable.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                documentGenerator.generateDocument();
+                fillTagsAndCallGeneration();
             }
         });
         gbc.gridy = 3;
@@ -94,7 +135,7 @@ public class ViewModelTable extends JPanel {
         createCSVButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                documentGenerator.selectOrCreateCSV(true);
+                selectOrCreateCSV(true);
             }
         });
         gbc.gridy = 1;
@@ -106,7 +147,7 @@ public class ViewModelTable extends JPanel {
         selectCSVButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                documentGenerator.selectOrCreateCSV(false);
+                selectOrCreateCSV(false);
             }
         });
         gbc.gridy = 2;
@@ -149,6 +190,99 @@ public class ViewModelTable extends JPanel {
 
     JLabel getFileLabel() {
         return fileLabel;
+    }
+
+    // Создание или выбор csv таблицы
+    private void selectOrCreateCSV(boolean createNew) {
+        // Вызываем метод создания основной папки
+        documentGenerator.createFolder();
+        csvFilePath = null;
+        String outputFolderPath = documentGenerator.getOutputFolderPath();
+        if (createNew) {
+            csvFilePath = outputFolderPath + File.separator + "tags.csv";
+            // Создание новой таблицы
+            tagExtractor.writeTagsToCSV(selectedFiles, csvFilePath);
+            // Открытие папки с таблицей для последующего редактирования
+            openCSVFile(csvFilePath);
+        } else {
+            // Выбор существующей таблицы
+            FileDialog fileDialog = new FileDialog((Frame) null, "Выберите существующий файл tags.csv", FileDialog.LOAD);
+            fileDialog.setFile("*.csv");
+            fileDialog.setVisible(true);
+
+            String selectedFile = fileDialog.getFile();
+            String directory = fileDialog.getDirectory();
+
+            if (selectedFile != null && directory != null) {
+                File csvFile = new File(directory, selectedFile);
+                if (csvFile.exists()) {
+                    // Проверка тегов
+                    List<String> missingTags = tagExtractor.verifyTagsInCSV(selectedFiles, csvFile);
+
+                    if (!missingTags.isEmpty()) {
+                        // Формируем строку с каждым тегом на новой строке
+                        String errorMessage = "Отсутствующие теги:\n" + String.join("\n", missingTags);
+                        JTextArea textArea = new JTextArea(errorMessage);
+                        textArea.setEditable(false); // Запрет редактирования
+                        textArea.setLineWrap(false); // Отключаем перенос строк
+                        JScrollPane scrollPane = new JScrollPane(textArea);
+                        scrollPane.setPreferredSize(new Dimension(400, 300)); // Размер окна с прокруткой
+
+                        // Выводим сообщение с прокруткой
+                        JOptionPane.showMessageDialog(null, scrollPane, "Ошибка: вы выбрали таблицу с недостающими тегами!", JOptionPane.ERROR_MESSAGE);
+                        return; // Прерываем выполнение, если теги отсутствуют
+                    }
+                    csvFilePath = csvFile.getAbsolutePath();
+                }
+            }
+        }
+    }
+
+    // Метод для открытия файла tags.csv для последующего редактирования
+    private void openCSVFile(String filePath) {
+        try {
+            File csvFile = new File(filePath);
+            if (csvFile.exists()) {
+                Desktop.getDesktop().open(csvFile);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void fillTagsAndCallGeneration() {
+        generateFileUsingTable = new GenerateFileUsingTable();
+        List<TagMap> tagMaps = generateFileUsingTable.readTableFile(csvFilePath);
+        if (!checkTagValues(tagMaps)) {
+            return;
+        }
+        for (TagMap tagMap: tagMaps){
+            documentGenerator.generateDocument(tagMap, selectedFiles);
+        }
+    }
+
+    // Проверяем значения для специфичных тегов
+    public boolean checkTagValues(List<TagMap> tagMaps) {
+        List<String> invalidTags = new ArrayList<>();
+        for (TagMap tagMap : tagMaps) {
+            for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
+                String tag = entry.getKey();
+                String value = entry.getValue();
+                if ((tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}"))
+                        && (!value.equals("0") && !value.equals("1"))) {
+                    invalidTags.add(tag + ": " + value);
+                }
+            }
+        }
+
+        // Если есть ошибки, выводим их все
+        if (!invalidTags.isEmpty()) {
+            String errorMessage = "Ошибка!\nНайдены ошибочные значения в тегах:\n" +
+                    String.join("\n", invalidTags) + "\nПожалуйста, введите 0 или 1.";
+            JOptionPane.showMessageDialog(null, errorMessage, "Ошибка ввода", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
     }
 }
 

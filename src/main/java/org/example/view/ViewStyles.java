@@ -173,5 +173,33 @@ public class ViewStyles {
             g.drawString(text, textX, textY);
         }
     }
+
+    //  Метод для стилизации JOptionPane
+    static void styleOptionPane(JOptionPane optionPane) {
+        // Стилизация содержимого JOptionPane
+        Component[] components = optionPane.getComponents();
+        for (Component component : components) {
+            if (component instanceof JPanel) {
+                stylePanelComponents((JPanel) component, false); // Не стилизуем текст
+            }
+        }
+        // Установка белого фона для самого JOptionPane
+        optionPane.setBackground(Color.WHITE);
+        optionPane.setOpaque(true);
+    }
+
+    // Рекурсивная стилизация компонентов JPanel
+    private static void stylePanelComponents(JPanel panel, boolean styleText) {
+        panel.setBackground(Color.WHITE); // Устанавливаем белый фон для панели
+        for (Component component : panel.getComponents()) {
+            if (component instanceof JLabel && styleText) {
+                styleLabel((JLabel) component); // Стилизуем метку только при необходимости
+            } else if (component instanceof JButton) {
+                styleButton((JButton) component); // Стилизуем кнопку
+            } else if (component instanceof JPanel) {
+                stylePanelComponents((JPanel) component, styleText); // Рекурсивно стилизуем вложенные панели
+            }
+        }
+    }
 }
 
