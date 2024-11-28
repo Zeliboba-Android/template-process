@@ -99,7 +99,6 @@ public class ViewModelTable extends JPanel {
                     clearComboBox();
                     updateComboBox(viewModelStartScreen.select);
                     getFileLabel().setText("Выбранные файлы: ");
-                    generateButtonUsingTable.setEnabled(true);
                     createCSVButton.setEnabled(true);
                     selectCSVButton.setEnabled(true);
                 }
@@ -135,6 +134,7 @@ public class ViewModelTable extends JPanel {
         createCSVButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                generateButtonUsingTable.setEnabled(true);
                 selectOrCreateCSV(true);
             }
         });
@@ -233,6 +233,9 @@ public class ViewModelTable extends JPanel {
                         return; // Прерываем выполнение, если теги отсутствуют
                     }
                     csvFilePath = csvFile.getAbsolutePath();
+                    if (csvFilePath != null){
+                       generateButtonUsingTable.setEnabled(true);
+                    }
                 }
             }
         }

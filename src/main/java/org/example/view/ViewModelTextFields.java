@@ -83,9 +83,6 @@ public class ViewModelTextFields extends JPanel {
             int buttonWidth = (int) ((scrollPaneButton.getWidth() / 3) * 1.6);
             int buttonHeight = scrollPaneButton.getHeight() / 10;
 
-            int textFieldWidth = scrollPane.getWidth() - 50;
-            int textFieldHeight = 30;
-
             // Изменяем размеры и положение кнопок
             int buttonY = scrollPaneHeight / 15;
             int buttonSpacing = 20; // Фиксированное расстояние между кнопками
@@ -95,21 +92,40 @@ public class ViewModelTextFields extends JPanel {
 
             chooseFileLabel.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, scrollPaneHeight / 6, buttonWidth, buttonHeight);
             generateButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, scrollPaneHeight + scrollPaneHeight / 3 - 20, buttonWidth, buttonHeight);
-
-            // Динамическое изменение размеров текстовых полей
-            int topPadding = 10;
-            int padding = 10;
-            textFieldPanel.setPreferredSize(new Dimension(textFieldWidth, findTextFields().size() * textFieldHeight + topPadding));
-
-            for (JTextField textField : findTextFields()) {
-                textField.setBounds(padding, topPadding, textFieldWidth, textFieldHeight);
-                topPadding += textFieldHeight + padding;
-            }
-
+            adjustTextFieldSizes();
             revalidate();
             repaint();
         }
     }
+    private void adjustTextFieldSizes() {
+        // Получаем текущие размеры scrollPane
+        int scrollPaneWidth = scrollPane.getWidth();
+
+        // Проверяем, есть ли текстовые поля на панели
+        if (textFieldPanel != null && textFieldPanel.getComponentCount() > 0) {
+            // Рассчитываем размеры текстовых полей
+            int textFieldWidth = (int) (scrollPaneWidth * 0.92); // Ширина текстового поля - 90% ширины scrollPane
+            // Максимальная и минимальная высота текстового поля
+            int textFieldHeight = 30;
+
+            int yOffset = 10; // Отступ между текстовыми полями
+            int yPosition = yOffset;
+
+            // Обновляем размеры и положение каждого текстового поля
+            for (Component component : textFieldPanel.getComponents()) {
+                if (component instanceof JTextField) {
+                    component.setBounds(10, yPosition, textFieldWidth, textFieldHeight);
+                    yPosition += textFieldHeight + yOffset; // Смещаем позицию для следующего текстового поля
+                }
+            }
+
+            // Обновляем размер textFieldPanel, чтобы все текстовые поля уместились
+            textFieldPanel.setPreferredSize(new Dimension(scrollPaneWidth, yPosition + yOffset));
+            textFieldPanel.revalidate();
+            textFieldPanel.repaint();
+        }
+    }
+
 
     private boolean areAllTextFieldsFilled() {
         for (JTextField textField : findTextFields()) {
@@ -242,6 +258,7 @@ public class ViewModelTextFields extends JPanel {
         scrollPane = new JScrollPane(textFieldPanel);
         scrollPane.setBounds(70, 125, 300, 360); // Устанавливаем фиксированные размеры
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         ViewStyles.styleScrollBar(scrollPane.getVerticalScrollBar());
         add(scrollPane);
