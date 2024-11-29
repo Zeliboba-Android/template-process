@@ -259,9 +259,16 @@ public class ViewModelTable extends JPanel {
         if (!checkTagValues(tagMaps)) {
             return;
         }
-        for (TagMap tagMap: tagMaps){
-            documentGenerator.generateDocument(tagMap, selectedFiles);
+        String outputFolderPath = documentGenerator.getOutputFolderPath();
+        for (int i = 0; i < tagMaps.size(); i++){
+            documentGenerator.setOutputFolderPath(outputFolderPath + File.separator + "Пакет " + (i + 1));
+            documentGenerator.generateDocument(tagMaps.get(i), selectedFiles);
         }
+        documentGenerator.setOutputFolderPath(outputFolderPath);
+        documentGenerator.openFolder(outputFolderPath);
+//        for (TagMap tagMap: tagMaps){
+//            documentGenerator.generateDocument(tagMap, selectedFiles);
+//        }
     }
 
     // Проверяем значения для специфичных тегов

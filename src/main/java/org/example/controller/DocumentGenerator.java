@@ -38,6 +38,10 @@ public class DocumentGenerator {
         return outputFolderPath;
     }
 
+    public void setOutputFolderPath(String outputFolderPath) {
+        this.outputFolderPath = outputFolderPath;
+    }
+
     private void fillAddAuthorsTags() {
         if (additionalAuthors == null || additionalAuthors.getTagMaps().isEmpty()) {
             return;
@@ -103,7 +107,7 @@ public class DocumentGenerator {
         }
 
         // Открытие папки сгенерированных документов
-        openFolder(outputFolderPath);
+//        openFolder(outputFolderPath);
     }
 
     private void workWithSpecialFiles(List<File> filesToProcess, TagMap tagMap, int countAuthors) {
@@ -156,7 +160,9 @@ public class DocumentGenerator {
             // Проверка наличия пустых значений в TagMap
             boolean hasEmptyValues = checkForEmptyValues(tags);
             if (!hasEmptyValues) {
-                String newFilePath = outputFolderPath + File.separator + "Word" + File.separator + authorPrefix;
+                String newFolderPath = outputFolderPath + File.separator + "Word";
+                createFolderIfNotExists(new File(newFolderPath));
+                String newFilePath = newFolderPath + File.separator + authorPrefix;
                 if (fileName.endsWith(".doc")) {
                     WordDOC wordDOC = new WordDOC(tags, file);
                     wordDOC.changeFile(newFilePath);
@@ -237,16 +243,17 @@ public class DocumentGenerator {
         outputFolderPath = targetFolder + File.separator + currentDateTime;
         // Создаем папку
         File outputFolder = new File(outputFolderPath);
-        if (outputFolder.mkdirs()) {
-            if (isConvertToPdfSelected()) {
-                createFolderIfNotExists(new File(outputFolder, "PDF"));
-            }
-            createFolderIfNotExists(new File(outputFolder, "Word"));
-        }
+//        if (outputFolder.mkdirs()) {
+//            if (isConvertToPdfSelected()) {
+//                createFolderIfNotExists(new File(outputFolder, "PDF"));
+//            }
+//            createFolderIfNotExists(new File(outputFolder, "Word"));
+//        }
+        createFolderIfNotExists(outputFolder);
     }
 
     // Метод для открытия папки после генерации документов
-    private void openFolder(String outputFolderPath) {
+    public void openFolder(String outputFolderPath) {
         try {
             Desktop.getDesktop().open(new File(outputFolderPath));
         } catch (IOException e) {

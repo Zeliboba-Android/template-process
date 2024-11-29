@@ -546,5 +546,6 @@ public class ViewModelTextFields extends JPanel {
         fillTags();
         // Генерируем документ
         documentGenerator.generateDocument(tagMap, selectedFiles);
+        documentGenerator.openFolder(documentGenerator.getOutputFolderPath());
     }
 }
