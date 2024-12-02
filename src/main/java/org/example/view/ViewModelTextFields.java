@@ -36,7 +36,7 @@ public class ViewModelTextFields extends JPanel {
     private TagDatabase tagDatabase; // Database instance
     private File[] selectedFiles;
     private TagMap tagMap;
-    private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
+    private final Map<String, JTextField> specificFields = new HashMap<>();
 
     ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable) {
         this.main = main;
@@ -282,6 +282,14 @@ public class ViewModelTextFields extends JPanel {
 
     // метод для добавления подсказок в текстовые поля
     private void addPlaceholder(JTextField textField, String tag) {
+        // Сохраняем текущее текстовое поле только если его тег входит в список интересующих
+        boolean isSpecificTag = tag.equals("${key_ria_type_x_pr}") ||
+                tag.equals("${key_ria_type_x_bd59}") ||
+                tag.equals("${key_ria_type_x_bd34}");
+        if (isSpecificTag) {
+            specificFields.put(tag, textField);
+        }
+
         String placeholder = tagDatabase.getPlaceholder(tag);
         if (placeholder == null) {
             placeholder = tag;
@@ -296,14 +304,48 @@ public class ViewModelTextFields extends JPanel {
         textField.putClientProperty("placeholder", placeholder); // Сохраняем плейсхолдер в свойство текстового поля
 
         String finalPlaceholder = placeholder;
+
+        // Добавляем DocumentListener для отслеживания изменений текста
+        textField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                processTextFieldChange();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                processTextFieldChange();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                processTextFieldChange();
+            }
+
+            private void processTextFieldChange() {
+                String inputText = textField.getText().trim();
+
+                // Выполняем проверку только для специальных тегов
+                if (isSpecificTag) {
+                    if (!inputText.equals("0") && !inputText.equals("1") && !inputText.isEmpty()) {
+                        textField.setBackground(Color.RED); // Изменяем фон на красный при ошибке
+                    } else {
+                        textField.setBackground(Color.WHITE); // Восстанавливаем стандартный фон
+                        tagValuesMap.put(tag, inputText); // Сохраняем значение
+                        updateSpecificFields(tag, inputText); // Обновляем связанные поля
+                    }
+                } else {
+                    tagValuesMap.put(tag, inputText); // Просто сохраняем значение для других тегов
+                }
+            }
+        });
+
         textField.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
                 if (textField.getText().equals(finalPlaceholder)) {
                     textField.setText("");
                     textField.setForeground(Color.BLACK);
-                } else {
-                    tagValuesMap.put(tag, textField.getText());
                 }
             }
 
@@ -315,24 +357,22 @@ public class ViewModelTextFields extends JPanel {
                 if (inputText.isEmpty()) {
                     textField.setForeground(Color.GRAY);
                     textField.setText(finalPlaceholder);
-                } else {
-                    tagValuesMap.put(tag, inputText); // Сохраняем введенное значение
-                }
-
-                // Проверка для тегов с чекбоксами
-                if (tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}")) {
-                    if (!inputText.isEmpty() && !inputText.equals("0") && !inputText.equals("1")) {
-                        textField.setBackground(Color.RED); // Изменяем фон на красный при ошибке
-                        JOptionPane.showMessageDialog(null,
-                                "Ошибка: Введите только 0 или 1 для тега " + tag,
-                                "Ошибка ввода", JOptionPane.ERROR_MESSAGE);
-                        textField.requestFocus(); // Фокус на поле для исправления
-                    } else {
-                        textField.setBackground(Color.WHITE); // Восстанавливаем стандартный фон
-                    }
                 }
             }
         });
+    }
+
+    private void updateSpecificFields(String currentTag, String inputValue) {
+        if ("1".equals(inputValue)) {
+            for (Map.Entry<String, JTextField> entry : specificFields.entrySet()) {
+                String otherTag = entry.getKey();
+                JTextField otherField = entry.getValue();
+                if (!otherTag.equals(currentTag)) {
+                    otherField.setText("0");
+                    otherField.setForeground(Color.BLACK); // Чтобы пользователь видел изменения
+                }
+            }
+        }
     }
 
     // Способ динамической генерации текстовых полей тегов с заполнителями

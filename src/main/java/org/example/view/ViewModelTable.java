@@ -13,6 +13,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -274,25 +275,48 @@ public class ViewModelTable extends JPanel {
     // Проверяем значения для специфичных тегов
     public boolean checkTagValues(List<TagMap> tagMaps) {
         List<String> invalidTags = new ArrayList<>();
+
         for (TagMap tagMap : tagMaps) {
+            // Считаем значения для специфичных тегов
+            int countOnes = 0;
+            int countZeros = 0;
+            Map<String, String> specificTags = new HashMap<>();
+
             for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
                 String tag = entry.getKey();
                 String value = entry.getValue();
-                if ((tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}"))
-                        && (!value.equals("0") && !value.equals("1"))) {
-                    invalidTags.add(tag + ": " + value);
+
+                // Проверяем значение тегов
+                if ((tag.equals("${key_ria_type_x_pr}") || tag.equals("${key_ria_type_x_bd59}") || tag.equals("${key_ria_type_x_bd34}"))) {
+                    specificTags.put(tag, value);
+
+                    if (!value.equals("0") && !value.equals("1")) {
+                        invalidTags.add(tag + ": " + value);
+                    } else {
+                        if (value.equals("1")) {
+                            countOnes++;
+                        } else if (value.equals("0")) {
+                            countZeros++;
+                        }
+                    }
                 }
+            }
+
+            // Проверяем взаимосвязь значений тегов
+            if (!specificTags.isEmpty() && countOnes != 1) {
+                invalidTags.add("У тегов ${key_ria_type_x_pr}, ${key_ria_type_x_bd59}, ${key_ria_type_x_bd34} должно быть одно значение 1 и два значения 0.");
             }
         }
 
         // Если есть ошибки, выводим их все
         if (!invalidTags.isEmpty()) {
             String errorMessage = "Ошибка!\nНайдены ошибочные значения в тегах:\n" +
-                    String.join("\n", invalidTags) + "\nПожалуйста, введите 0 или 1.";
+                    String.join("\n", invalidTags) + "\nПожалуйста, проверьте правильность ввода.";
             JOptionPane.showMessageDialog(null, errorMessage, "Ошибка ввода", JOptionPane.ERROR_MESSAGE);
             return false;
         }
         return true;
     }
+
 }
 
