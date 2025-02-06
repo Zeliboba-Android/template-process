@@ -33,7 +33,6 @@ public class Main {
         // Создаем панель с CardLayout и добавляем в неё начальный экран
         mainPanel = new JPanel(cardLayout);
         mainPanel.add(viewModelStartScreen, "startScreen");
-
         frame.getContentPane().add(mainPanel); // Добавляем mainPanel в контейнер главного окна
         frame.setLocationRelativeTo(null);
         frame.setVisible(true); // Делаем окно видимым

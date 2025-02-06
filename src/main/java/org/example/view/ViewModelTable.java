@@ -228,7 +228,7 @@ public class ViewModelTable extends JPanel {
                         textArea.setLineWrap(false); // Отключаем перенос строк
                         JScrollPane scrollPane = new JScrollPane(textArea);
                         scrollPane.setPreferredSize(new Dimension(400, 300)); // Размер окна с прокруткой
-
+                        generateButtonUsingTable.setEnabled(false);
                         // Выводим сообщение с прокруткой
                         JOptionPane.showMessageDialog(null, scrollPane, "Ошибка: вы выбрали таблицу с недостающими тегами!", JOptionPane.ERROR_MESSAGE);
                         return; // Прерываем выполнение, если теги отсутствуют
