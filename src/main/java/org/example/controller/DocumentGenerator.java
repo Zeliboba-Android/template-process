@@ -6,7 +6,6 @@ import com.documents4j.job.LocalConverter;
 import org.example.main.Main;
 import org.example.model.*;
 
-import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.net.URLDecoder;
@@ -42,60 +41,17 @@ public class DocumentGenerator {
         this.outputFolderPath = outputFolderPath;
     }
 
-    private void fillAddAuthorsTags() {
-        if (additionalAuthors == null || additionalAuthors.getTagMaps().isEmpty()) {
-            return;
-        }
-        Map<String, String> tagMapCopy = new HashMap<>(copyTagMap.getTagMap());
-        for (Map.Entry<String, String> entry : tagMapCopy.entrySet()) {
-            String tag = entry.getKey();
-            String newTag = tag;
-            if (tag.contains("key_ria_author") && tag.matches(".*\\d+.*")) {
-                int authorIndex = extractAuthorIndex(tag);
-                if (authorIndex > 3) {
-                    // Определяем новый индекс автора, начиная с 2
-                    int newIndex;
-                    if (authorIndex > 6) {
-                        newIndex = 2 + (authorIndex - 7) % 3;
-                    } else {
-                        newIndex = 2 + (authorIndex - 4) % 4;
-                    }
-                    newTag = tag.replaceFirst("X\\d+", "X" + newIndex);
-                }
-                additionalAuthors.addTagToAuthor(authorIndex, newTag, entry.getValue());
-                copyTagMap.removeTag(tag); // Удаляем тег из tagMap
-            }
-        }
-    }
-
-    private void fillMultiAuthorsTags() {
-        if (multiAuthors == null || multiAuthors.getTagMaps().isEmpty()) {
-            return;
-        }
-        Map<String, String> tagMapCopy = new HashMap<>(copyTagMap.getTagMap());
-        for (Map.Entry<String, String> entry : tagMapCopy.entrySet()) {
-            String tag = entry.getKey();
-            if (tag.contains("key_ria_author") && tag.matches(".*\\d+.*")) {
-                int authorIndex = extractAuthorIndex(tag);
-                String newTag = tag.replaceFirst("X\\d+", "X" + 1);
-                multiAuthors.addTagToAuthor(authorIndex, newTag, entry.getValue());
-                copyTagMap.removeTag(tag); // Удаляем тег из tagMap
-            }
-        }
-    }
-
-    private int extractAuthorIndex(String tag) {
-        // Извлечение индекса автора из тега, например, из "key_ria_authorX3" вернет 2 (индексация с 0)
-        String indexStr = tag.replaceAll("\\D+", ""); // Удаляем все нецифровые символы
-        return Integer.parseInt(indexStr) - 1;
-    }
-
     public void generateDocument(TagMap tagMap, File[] selectedFiles) {
         // Создаем изменяемый список для хранения файлов, которые нужно обработать
         List<File> filesToProcess = new ArrayList<>(List.of(selectedFiles));
         int countAuthors = main.viewModelStartScreen.selectedNumber;
         if (countAuthors > 1) {
-            workWithSpecialFiles(filesToProcess, tagMap, countAuthors);
+            // Проверяем, есть ли файлы с ключевыми словами
+            boolean hasSpecialFiles = filesToProcess.stream().map(File::getName)
+                    .anyMatch(name -> name.contains("main") || name.contains("additional")
+                            || name.contains("multi") || name.contains("block"));
+            if (hasSpecialFiles)
+                workWithSpecialFiles(filesToProcess, tagMap, countAuthors);
         }
         for (File file : filesToProcess) {
             replaceText(file, tagMap, file.getName());
@@ -105,53 +61,71 @@ public class DocumentGenerator {
         if (isConvertToPdfSelected()) {
             convertAllWordDocumentsToPdf();
         }
-
-        // Открытие папки сгенерированных документов
-//        openFolder(outputFolderPath);
     }
 
     private void workWithSpecialFiles(List<File> filesToProcess, TagMap tagMap, int countAuthors) {
         copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
         additionalAuthors = new Authors(countAuthors);
-        fillAddAuthorsTags();
+        new SharedTagProcessor().fillAuthorsTags(copyTagMap, additionalAuthors);
+
         Iterator<File> iterator = filesToProcess.iterator();
         while (iterator.hasNext()) {
             File file = iterator.next();
             String fileName = file.getName();
             if (fileName.contains("main")) {
                 // Объединяем теги первого автора и общие теги
-                TagMap combinedTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
-                combinedTagMap.combineTags(additionalAuthors.getMainTagMap());
-                replaceText(file, combinedTagMap, fileName.replace("main_", "1_"));
+                processMainFile(file, fileName);
                 iterator.remove();
             } else if (fileName.contains("additional")) {
                 // Обрабатываем дополнительные файлы для остальных авторов
-                for (int i = 1; i < additionalAuthors.getTagMaps().size(); i += 3) {
-                    TagMap additionalTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
-                    StringBuilder authorNumbers = new StringBuilder();
-                    for (int j = 0; j < 3; j++) {
-                        if (i + j < additionalAuthors.getTagMaps().size()) {
-                            additionalTagMap.combineTags(additionalAuthors.getTagMapByIndex(i + j));
-                            authorNumbers.append(i + j + 1 + "_");
-                        }
-                    }
-                    replaceText(file, additionalTagMap, fileName.replace("additional_", authorNumbers));
-                }
+                processAdditionalFile(file, fileName);
                 iterator.remove();
             } else if (fileName.contains("multi")) {
-                copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
-                // Разбиваем теги по типу "key_ria_authorX..." для каждого автора
-                multiAuthors = new Authors(countAuthors);
-                fillMultiAuthorsTags();
-                // Обрабатываем файлы, которые должны генерироваться для каждых авторов
-                for (int i = 0; i < countAuthors; i++) {
-                    TagMap multiTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
-                    multiTagMap.combineTags(multiAuthors.getTagMapByIndex(i));
-                    replaceText(file, multiTagMap, fileName.replace("multi_", (i + 1) + "_"));
-                }
+                processMultiFile(file, tagMap, countAuthors, fileName);
+                iterator.remove();
+            } else if (fileName.contains("block")) {
+                // логика динамической генерации блоков, скорее всего класс будет имплиментировать TagNumberingProcessor
+                processBlockFile(file, tagMap, fileName);
                 iterator.remove();
             }
         }
+    }
+
+    private void processMainFile(File file, String fileName) {
+        TagMap combinedTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+        combinedTagMap.combineTags(additionalAuthors.getMainTagMap());
+        replaceText(file, combinedTagMap, fileName.replace("main_", "1_"));
+    }
+
+    private void processAdditionalFile(File file, String fileName) {
+        for (int i = 1; i < additionalAuthors.getTagMaps().size(); i += 3) {
+            TagMap additionalTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+            StringBuilder authorNumbers = new StringBuilder();
+            for (int j = 0; j < 3; j++) {
+                if (i + j < additionalAuthors.getTagMaps().size()) {
+                    additionalTagMap.combineTags(additionalAuthors.getTagMapByIndex(i + j));
+                    authorNumbers.append(i + j + 1 + "_");
+                }
+            }
+            replaceText(file, additionalTagMap, fileName.replace("additional_", authorNumbers));
+        }
+    }
+
+    private void processMultiFile(File file, TagMap tagMap, int countAuthors, String fileName) {
+        copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
+        // Разбиваем теги по типу "key_ria_authorX..." для каждого автора
+        multiAuthors = new Authors(countAuthors);
+        new MultiTagProcessor().fillAuthorsTags(copyTagMap, multiAuthors);
+        // Обрабатываем файлы, которые должны генерироваться для каждых авторов
+        for (int i = 0; i < countAuthors; i++) {
+            TagMap multiTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+            multiTagMap.combineTags(multiAuthors.getTagMapByIndex(i));
+            replaceText(file, multiTagMap, fileName.replace("multi_", (i + 1) + "_"));
+        }
+    }
+
+    private void processBlockFile(File file, TagMap tagMap, String fileName) {
+        replaceText(file, /* возможно, новый TagMap для block */ tagMap, fileName.replace("block_", ""));
     }
 
     private void replaceText(File file, TagMap tags, String authorPrefix) {
@@ -243,12 +217,6 @@ public class DocumentGenerator {
         outputFolderPath = targetFolder + File.separator + currentDateTime;
         // Создаем папку
         File outputFolder = new File(outputFolderPath);
-//        if (outputFolder.mkdirs()) {
-//            if (isConvertToPdfSelected()) {
-//                createFolderIfNotExists(new File(outputFolder, "PDF"));
-//            }
-//            createFolderIfNotExists(new File(outputFolder, "Word"));
-//        }
         createFolderIfNotExists(outputFolder);
     }
 

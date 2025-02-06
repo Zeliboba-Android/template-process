@@ -38,8 +38,6 @@ public class Main {
         frame.setVisible(true); // Делаем окно видимым
     }
 
-
-
     // Функция для переключения панелей
     public void switchToPanel(JPanel newPanel) {
         String panelName = newPanel.getClass().getSimpleName(); // Используем имя класса в качестве ключа
