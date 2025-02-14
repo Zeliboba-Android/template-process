@@ -1,5 +1,6 @@
 package org.example.view;
 
+import org.example.controller.BlockProcessor;
 import org.example.controller.DocumentGenerator;
 import org.example.main.Main;
 import org.example.model.TagDatabase;
@@ -12,6 +13,7 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.*;
 
@@ -197,6 +199,7 @@ public class ViewModelTextFields extends JPanel {
 
                 // Если выбор был произведён, обновляем массив и остальные элементы
                 selectedFiles = newSelectedFiles;
+                selectedFiles = viewModelTable.preprocessBlockFiles(selectedFiles);
                 removeTextFields();
                 removeFileButtons();
                 tagValuesMap.clear();

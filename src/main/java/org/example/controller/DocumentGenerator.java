@@ -48,8 +48,7 @@ public class DocumentGenerator {
         if (countAuthors > 1) {
             // Проверяем, есть ли файлы с ключевыми словами
             boolean hasSpecialFiles = filesToProcess.stream().map(File::getName)
-                    .anyMatch(name -> name.contains("main") || name.contains("additional")
-                            || name.contains("multi") || name.contains("block"));
+                    .anyMatch(name -> name.contains("main") || name.contains("additional") || name.contains("multi"));
             if (hasSpecialFiles)
                 workWithSpecialFiles(filesToProcess, tagMap, countAuthors);
         }
@@ -82,10 +81,6 @@ public class DocumentGenerator {
                 iterator.remove();
             } else if (fileName.contains("multi")) {
                 processMultiFile(file, tagMap, countAuthors, fileName);
-                iterator.remove();
-            } else if (fileName.contains("block")) {
-                // логика динамической генерации блоков, скорее всего класс будет имплиментировать TagNumberingProcessor
-                processBlockFile(file, tagMap, fileName);
                 iterator.remove();
             }
         }
@@ -122,10 +117,6 @@ public class DocumentGenerator {
             multiTagMap.combineTags(multiAuthors.getTagMapByIndex(i));
             replaceText(file, multiTagMap, fileName.replace("multi_", (i + 1) + "_"));
         }
-    }
-
-    private void processBlockFile(File file, TagMap tagMap, String fileName) {
-        replaceText(file, /* возможно, новый TagMap для block */ tagMap, fileName.replace("block_", ""));
     }
 
     private void replaceText(File file, TagMap tags, String authorPrefix) {

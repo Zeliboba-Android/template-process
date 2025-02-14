@@ -1,5 +1,6 @@
 package org.example.view;
 
+import org.example.controller.BlockProcessor;
 import org.example.controller.DocumentGenerator;
 import org.example.controller.GenerateFileUsingTable;
 import org.example.main.Main;
@@ -135,6 +136,7 @@ public class ViewModelTable extends JPanel {
         createCSVButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                selectedFiles = preprocessBlockFiles(selectedFiles);
                 generateButtonUsingTable.setEnabled(true);
                 selectOrCreateCSV(true);
             }
@@ -148,6 +150,7 @@ public class ViewModelTable extends JPanel {
         selectCSVButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                selectedFiles = preprocessBlockFiles(selectedFiles);
                 selectOrCreateCSV(false);
             }
         });
@@ -242,6 +245,41 @@ public class ViewModelTable extends JPanel {
         }
     }
 
+    // Дублирование текста с помощью команды-тега
+    File[] preprocessBlockFiles(File [] selectedFiles){
+        List<File> processedFiles = new ArrayList<>();
+        // Проходим по всем выбранным файлам
+        for (File file : selectedFiles) {
+            // Если имя файла начинается с "block_", его нужно предварительно обработать
+            if (file.getName().startsWith("block_")) {
+                try {
+                    // Формируем новый путь для файла без префикса "block_"
+                    // Например, "C:\Documents\block_example.docx" -> "C:\Documents\example.docx"
+                    String originalPath = file.getAbsolutePath();
+                    String newFilePath = originalPath.replace("block_", "");
+
+                    // Создаём объект BlockProcessor для обработки данного файла
+                    BlockProcessor processor = new BlockProcessor(file);
+
+                    // Метод processBlockFileWithDuplicateSaving выполняет дублирование текста (с заменой "X" на номер автора)
+                    // и сохраняет обновлённое содержимое по новому пути
+                    processor.processBlockFile(newFilePath);
+
+                    // Добавляем новый обработанный файл в список
+                    processedFiles.add(new File(newFilePath));
+                } catch (IOException exception) {
+                    System.err.println("Ошибка обработки block-файла: " + file.getName());
+                    exception.printStackTrace();
+                }
+            } else {
+                // Если файл не содержит префикс "block_", добавляем его без изменений
+                processedFiles.add(file);
+            }
+        }
+        // Возвращаем массив с новыми файлами для дальнейшей генерации
+        return processedFiles.toArray(new File[0]);
+    }
+
     // Метод для открытия файла tags.csv для последующего редактирования
     private void openCSVFile(String filePath) {
         try {
@@ -267,9 +305,6 @@ public class ViewModelTable extends JPanel {
         }
         documentGenerator.setOutputFolderPath(outputFolderPath);
         documentGenerator.openFolder(outputFolderPath);
-//        for (TagMap tagMap: tagMaps){
-//            documentGenerator.generateDocument(tagMap, selectedFiles);
-//        }
     }
 
     // Проверяем значения для специфичных тегов
