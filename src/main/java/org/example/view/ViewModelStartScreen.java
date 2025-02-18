@@ -27,7 +27,7 @@ public class ViewModelStartScreen extends JPanel {
     private JLabel universityLabel;
     public static BufferedImage logo;
     public boolean verification;
-    public int selectedNumber = 1;
+    public static int selectedNumber = 1;
     private JCheckBox convertToPdfCheckBox;
     public static boolean convertToPdf = false;
     String[] select;

@@ -7,6 +7,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * MultiTagProcessor обрабатывает теги в multi‑файле.
+ * Теперь теги должны быть вида ${key_ria_author1_lastname} и т.д.
+ * Логика:
+ *  1. Если тег содержит "key_ria_author" и цифры, извлекается индекс автора.
+ *  2. Затем число сразу после "key_ria_author" заменяется на "1" (для основного тега).
+ *  3. Новый тег добавляется в объект Authors, а исходный удаляется из TagMap.
+ *
  * @author stifell on 07.02.2025
  */
 public class MultiTagProcessor implements TagProcessor {
@@ -19,11 +26,13 @@ public class MultiTagProcessor implements TagProcessor {
         Map<String, String> tagMapCopy = new HashMap<>(originalTagMap.getTagMap());
         for (Map.Entry<String, String> entry : tagMapCopy.entrySet()) {
             String tag = entry.getKey();
+            // Если тег содержит "key_ria_author" и содержит цифры (например, key_ria_author1_lastname)
             if (tag.contains("key_ria_author") && tag.matches(".*\\d+.*")) {
                 int authorIndex = extractAuthorIndex(tag);
-                String newTag = tag.replaceFirst("X\\d+", "X" + 1);
+                // Заменяем число сразу после "key_ria_author" на "1"
+                String newTag = tag.replaceFirst("(?<=key_ria_author)\\d+", "1");
                 authors.addTagToAuthor(authorIndex, newTag, entry.getValue());
-                originalTagMap.removeTag(tag); // Удаляем тег из tagMap
+                originalTagMap.removeTag(tag); // удаляем исходный тег
             }
         }
     }

@@ -5,6 +5,7 @@ import com.documents4j.api.IConverter;
 import com.documents4j.job.LocalConverter;
 import org.example.main.Main;
 import org.example.model.*;
+import org.example.view.ViewModelStartScreen;
 
 import java.awt.*;
 import java.io.*;
@@ -44,7 +45,7 @@ public class DocumentGenerator {
     public void generateDocument(TagMap tagMap, File[] selectedFiles) {
         // Создаем изменяемый список для хранения файлов, которые нужно обработать
         List<File> filesToProcess = new ArrayList<>(List.of(selectedFiles));
-        int countAuthors = main.viewModelStartScreen.selectedNumber;
+        int countAuthors = ViewModelStartScreen.selectedNumber;
         if (countAuthors > 1) {
             // Проверяем, есть ли файлы с ключевыми словами
             boolean hasSpecialFiles = filesToProcess.stream().map(File::getName)

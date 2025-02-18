@@ -5,8 +5,10 @@ import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.example.main.Main;
+import org.example.view.ViewModelStartScreen;
 
 import java.io.*;
+import java.sql.SQLOutput;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -120,18 +122,20 @@ public class TagExtractor {
 
     private void addCountAuthors(boolean useCSV, PrintWriter writer) {
         Set<String> additionTags = new HashSet<>();
-        int countAuthors = main.viewModelStartScreen.selectedNumber;
+        int countAuthors = ViewModelStartScreen.selectedNumber;
 
         if (countAuthors > 4) {
             for (String tag : uniqueTags) {
-                if (tag.contains("key_ria_authorX1")) {
+                if (tag.contains("key_ria_author1")) {
                     additionTags.add(tag);
                 }
             }
-
+            // Для каждого автора от 1 до countAuthors заменяем число после "key_ria_author"
             for (int i = 1; i <= countAuthors; i++) {
                 for (String tag : additionTags) {
-                    String authorTag = tag.replace("X1", "X" + i); // Заменяем "X1" на нужный номер автора
+                    // Используем replaceAll с группой, чтобы заменить только часть, например:
+                    // "key_ria_author1_lastname" → "key_ria_author2_lastname" для i=2
+                    String authorTag = tag.replaceAll("(key_ria_author)1", "$1" + i);
                     if (!uniqueTags.contains(authorTag)) {
                         uniqueTags.add(authorTag);
 
@@ -142,7 +146,6 @@ public class TagExtractor {
                                 tagsList.add(authorTag);
                             }
                         }
-
                         // Работа с базой данных: получаем значение из базы данных или добавляем новый тег
                         String placeholder = tagDatabase.getPlaceholder(authorTag);
 
