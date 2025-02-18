@@ -96,8 +96,6 @@ public class BlockProcessor {
     private void processAuthorsBlockNewline(XWPFParagraph originalParagraph, int copies, List<RunStyle> styles) {
         IBody body = originalParagraph.getBody();
         String fullText = buildFullText(styles);
-//        StringBuilder fullText = new StringBuilder();
-//        styles.forEach(style -> fullText.append(style.text));
         String firstAuthorText = replaceXInVariables(fullText, 1);
         insertStyledText(originalParagraph, styles, firstAuthorText);
 

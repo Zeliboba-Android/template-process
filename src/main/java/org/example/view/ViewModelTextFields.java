@@ -199,7 +199,7 @@ public class ViewModelTextFields extends JPanel {
 
                 // Если выбор был произведён, обновляем массив и остальные элементы
                 selectedFiles = newSelectedFiles;
-                selectedFiles = viewModelTable.preprocessBlockFiles(selectedFiles);
+                selectedFiles = ViewModelTable.preprocessBlockFiles(selectedFiles);
                 removeTextFields();
                 removeFileButtons();
                 tagValuesMap.clear();

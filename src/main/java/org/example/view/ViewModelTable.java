@@ -246,7 +246,7 @@ public class ViewModelTable extends JPanel {
     }
 
     // Дублирование текста с помощью команды-тега
-    File[] preprocessBlockFiles(File [] selectedFiles){
+    static File[] preprocessBlockFiles(File [] selectedFiles){
         List<File> processedFiles = new ArrayList<>();
         // Проходим по всем выбранным файлам
         for (File file : selectedFiles) {
