@@ -1,7 +1,9 @@
 package org.example.view;
 
 import org.example.controller.DocumentGenerator;
+import org.example.controller.FileManager;
 import org.example.main.Main;
+import org.example.model.TagExtractor;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -17,6 +19,8 @@ import java.io.File;
 public class ViewModelStartScreen extends JPanel {
     private Main main;
     private DocumentGenerator documentGenerator;
+    private FileManager fileManager;
+    private TagExtractor tagExtractor;
     public ViewModelTextFields viewModelTextFields;
     public ViewModelTable viewModelTable;
     private JLabel labelChoosingGenerateMethod;
@@ -33,17 +37,18 @@ public class ViewModelStartScreen extends JPanel {
     String[] select;
     private JButton chooseDirectoryButton;
     private JLabel chosenDirectoryLabel;
-    public static String chosenDirectoryPath = null;
 
     // Константы для одинакового размера компонентов
     private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
     private static final Dimension LABEL_SIZE = new Dimension((int)(250 * 1.4), (int)(50 * 1.4)); // Размер надписи
 
-    public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator) {
+    public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator, FileManager fileManager) {
         this.main = main;
         this.documentGenerator = documentGenerator;
-        viewModelTextFields = new ViewModelTextFields(main,this, this.documentGenerator,viewModelTable);
-        viewModelTable = new ViewModelTable(main,this, this.documentGenerator);
+        this.fileManager = fileManager;
+        this.tagExtractor = new TagExtractor();
+        viewModelTextFields = new ViewModelTextFields(main,this, documentGenerator, fileManager, tagExtractor);
+        viewModelTable = new ViewModelTable(main,this, documentGenerator, fileManager, tagExtractor);
 
         initializeStartScreen();
     }
@@ -108,8 +113,9 @@ public class ViewModelStartScreen extends JPanel {
 
                 if (result == JFileChooser.APPROVE_OPTION) {
                     File selectedDirectory = fileChooser.getSelectedFile();
-                    chosenDirectoryPath = selectedDirectory.getAbsolutePath();
+                    String chosenDirectoryPath = selectedDirectory.getAbsolutePath();
                     chosenDirectoryLabel.setText("Путь: " + chosenDirectoryPath);
+                    fileManager.setTargetFolderPath(chosenDirectoryPath);
                     buttonGenerateWithTextFields.setEnabled(true);
                     buttonGenerateWithTable.setEnabled(true);
                 }

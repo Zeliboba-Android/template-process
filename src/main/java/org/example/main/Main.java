@@ -1,6 +1,7 @@
 package org.example.main;
 
 import org.example.controller.DocumentGenerator;
+import org.example.controller.FileManager;
 import org.example.view.ViewModelStartScreen;
 
 import javax.swing.*;
@@ -12,13 +13,15 @@ public class Main {
     public JFrame frame;
     public ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
+    private FileManager fileManager;
     private JPanel mainPanel; // Панель, которая будет использовать CardLayout
     private CardLayout cardLayout; // Менеджер компоновки для переключения панелей
     private Map<String, JPanel> panelMap; // Карта для хранения панелей по их именам
 
     private Main() {
-        documentGenerator = new DocumentGenerator(this);
-        viewModelStartScreen = new ViewModelStartScreen(this, documentGenerator);
+        fileManager = new FileManager();
+        documentGenerator = new DocumentGenerator(fileManager);
+        viewModelStartScreen = new ViewModelStartScreen(this, documentGenerator, fileManager);
         panelMap = new HashMap<>(); // Инициализация карты для хранения панелей
         cardLayout = new CardLayout(); // Инициализация CardLayout
         generateFrame();

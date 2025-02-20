@@ -2,6 +2,7 @@ package org.example.view;
 
 import org.example.controller.BlockProcessor;
 import org.example.controller.DocumentGenerator;
+import org.example.controller.FileManager;
 import org.example.main.Main;
 import org.example.model.TagDatabase;
 import org.example.model.TagExtractor;
@@ -20,6 +21,7 @@ import java.util.*;
 public class ViewModelTextFields extends JPanel {
     private Main main;
     private DocumentGenerator documentGenerator;
+    private FileManager fileManager;
     private TagExtractor tagExtractor;
     private JButton generateButton;
     public JButton buttonBackSpace;
@@ -31,7 +33,6 @@ public class ViewModelTextFields extends JPanel {
     private JPanel textFieldPanel;
     private JScrollPane scrollPane;
     private JScrollPane scrollPaneButton;
-    private ViewModelTable viewModelTable;
     private JPanel buttonPanel;
     private HashMap<String, List<String>> fileTagMap;
     private Map<String, String> tagValuesMap; // Map to store tag values
@@ -40,13 +41,14 @@ public class ViewModelTextFields extends JPanel {
     private TagMap tagMap;
     private final Map<String, JTextField> specificFields = new HashMap<>();
 
-    ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable) {
+    ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator,
+                        FileManager fileManager, TagExtractor tagExtractor) {
         this.main = main;
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
-        this.viewModelTable = viewModelTable;
+        this.fileManager = fileManager;
+        this.tagExtractor = tagExtractor;
         this.tagDatabase = new TagDatabase();
-        this.tagExtractor = documentGenerator.tagExtractor;
         ViewStyles.stylePanel(this);
         setLayout(null);
         setFocusable(true);
@@ -199,7 +201,7 @@ public class ViewModelTextFields extends JPanel {
 
                 // Если выбор был произведён, обновляем массив и остальные элементы
                 selectedFiles = newSelectedFiles;
-                selectedFiles = ViewModelTable.preprocessBlockFiles(selectedFiles);
+                selectedFiles = fileManager.preprocessBlockFiles(selectedFiles);
                 removeTextFields();
                 removeFileButtons();
                 tagValuesMap.clear();
@@ -209,7 +211,7 @@ public class ViewModelTextFields extends JPanel {
                 for (int i = 0; i < selectedFiles.length; i++) {
                     viewModelStartScreen.select[i] = selectedFiles[i].getName();
                 }
-                fileTagMap = documentGenerator.tagExtractor.writeTagsToMap(selectedFiles);
+                fileTagMap = tagExtractor.writeTagsToMap(selectedFiles);
                 generateFileButtons(fileTagMap);
                 generateTextFields(getAllTags(fileTagMap));
             }
@@ -584,11 +586,11 @@ public class ViewModelTextFields extends JPanel {
 
     private void fillTagsAndCallGeneration() {
         // Вызываем метод создания основной папки
-        documentGenerator.createFolder();
+        fileManager.createFolder();
         // Заполнение тегов
         fillTags();
         // Генерируем документ
         documentGenerator.generateDocument(tagMap, selectedFiles);
-        documentGenerator.openFolder(documentGenerator.getOutputFolderPath());
+        fileManager.openFileOrFolder(fileManager.getOutputFolderPath());
     }
 }

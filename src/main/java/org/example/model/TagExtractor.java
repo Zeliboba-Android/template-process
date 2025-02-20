@@ -19,15 +19,11 @@ import java.util.regex.Pattern;
 public class TagExtractor {
     private final String regex = "\\$\\{[^}]+\\}";
     private Pattern pattern;
-    private List<String> tags = new ArrayList<>();
     private Set<String> uniqueTags = new HashSet<>();
-    public String csvFilePath;
     private HashMap<String, List<String>> fileTagMap = new HashMap<>();
-    private Main main;
     private TagDatabase tagDatabase;
 
-    public TagExtractor(Main main) {
-        this.main = main;
+    public TagExtractor() {
         this.pattern = Pattern.compile(regex);
         this.tagDatabase = new TagDatabase();
     }
@@ -205,6 +201,32 @@ public class TagExtractor {
         }
 
         return missingTags;
+    }
+
+    // Загрузка данных из CSV файла
+    public List<TagMap> readTableFile(String csvFilePath) {
+        List<TagMap> tagMaps = new ArrayList<>();
+        try (// Укажите правильную кодировку вашего файла CSV
+             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFilePath),"cp1251"));
+        ) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(";");
+                if (parts.length > 2) {
+                    String tag = parts[1].trim(); // Тег
+                    for (int i = 2; i < parts.length; i++) { // Начинаем со столбца данных
+                        if (tagMaps.size() < i - 1) {
+                            tagMaps.add(new TagMap()); // Инициализируем Map для нового столбца
+                        }
+                        String value = parts[i].trim();
+                        tagMaps.get(i - 2).addTag(tag, value); // Добавляем значение в соответствующий Map
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return tagMaps;
     }
 
     public Set<String> getUniqueTags() {

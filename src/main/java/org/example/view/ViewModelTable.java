@@ -2,7 +2,7 @@ package org.example.view;
 
 import org.example.controller.BlockProcessor;
 import org.example.controller.DocumentGenerator;
-import org.example.controller.GenerateFileUsingTable;
+import org.example.controller.FileManager;
 import org.example.main.Main;
 import org.example.model.TagExtractor;
 import org.example.model.TagMap;
@@ -22,14 +22,13 @@ public class ViewModelTable extends JPanel {
     private Main main;
     private ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
+    private FileManager fileManager;
     private TagExtractor tagExtractor;
-    private GenerateFileUsingTable generateFileUsingTable;
     public JButton generateButtonUsingTable;
     private JButton buttonBackSpace;
     public JButton createCSVButton;
     public JButton selectCSVButton;
     private JComboBox<String> selectFilesForTableComboBox;
-    private ViewModelTextFields viewModelTextFields;
     private JLabel fileLabel;
     // Константы для одинакового размера компонентов
     private static final Dimension COMPONENT_SIZE = new Dimension((int) (300*1.4), (int) (50*1.4));
@@ -39,12 +38,13 @@ public class ViewModelTable extends JPanel {
     private File[] selectedFiles;
     private String csvFilePath;
 
-    ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator) {
+    ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator,
+                   FileManager fileManager, TagExtractor tagExtractor) {
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
         this.main = main;
-        this.viewModelTextFields = new ViewModelTextFields(main, viewModelStartScreen, documentGenerator, this);
-        this.tagExtractor = documentGenerator.tagExtractor;
+        this.fileManager = fileManager;
+        this.tagExtractor = tagExtractor;
 
         ViewStyles.stylePanel(this);
         setLayout(new BorderLayout()); // Используем BorderLayout для основного компонента
@@ -136,7 +136,7 @@ public class ViewModelTable extends JPanel {
         createCSVButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                selectedFiles = preprocessBlockFiles(selectedFiles);
+                selectedFiles = fileManager.preprocessBlockFiles(selectedFiles);
                 generateButtonUsingTable.setEnabled(true);
                 selectOrCreateCSV(true);
             }
@@ -150,7 +150,7 @@ public class ViewModelTable extends JPanel {
         selectCSVButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                selectedFiles = preprocessBlockFiles(selectedFiles);
+                selectedFiles = fileManager.preprocessBlockFiles(selectedFiles);
                 selectOrCreateCSV(false);
             }
         });
@@ -199,15 +199,15 @@ public class ViewModelTable extends JPanel {
     // Создание или выбор csv таблицы
     private void selectOrCreateCSV(boolean createNew) {
         // Вызываем метод создания основной папки
-        documentGenerator.createFolder();
+        fileManager.createFolder();
         csvFilePath = null;
-        String outputFolderPath = documentGenerator.getOutputFolderPath();
+        String outputFolderPath = fileManager.getOutputFolderPath();
         if (createNew) {
             csvFilePath = outputFolderPath + File.separator + "tags.csv";
             // Создание новой таблицы
             tagExtractor.writeTagsToCSV(selectedFiles, csvFilePath);
             // Открытие папки с таблицей для последующего редактирования
-            openCSVFile(csvFilePath);
+            fileManager.openFileOrFolder(csvFilePath);
         } else {
             // Выбор существующей таблицы
             FileDialog fileDialog = new FileDialog((Frame) null, "Выберите существующий файл tags.csv", FileDialog.LOAD);
@@ -245,66 +245,19 @@ public class ViewModelTable extends JPanel {
         }
     }
 
-    // Дублирование текста с помощью команды-тега
-    static File[] preprocessBlockFiles(File [] selectedFiles){
-        List<File> processedFiles = new ArrayList<>();
-        // Проходим по всем выбранным файлам
-        for (File file : selectedFiles) {
-            // Если имя файла начинается с "block_", его нужно предварительно обработать
-            if (file.getName().startsWith("block_")) {
-                try {
-                    // Формируем новый путь для файла без префикса "block_"
-                    // Например, "C:\Documents\block_example.docx" -> "C:\Documents\example.docx"
-                    String originalPath = file.getAbsolutePath();
-                    String newFilePath = originalPath.replace("block_", "");
-
-                    // Создаём объект BlockProcessor для обработки данного файла
-                    BlockProcessor processor = new BlockProcessor(file);
-
-                    // Метод processBlockFileWithDuplicateSaving выполняет дублирование текста (с заменой "X" на номер автора)
-                    // и сохраняет обновлённое содержимое по новому пути
-                    processor.processBlockFile(newFilePath);
-
-                    // Добавляем новый обработанный файл в список
-                    processedFiles.add(new File(newFilePath));
-                } catch (IOException exception) {
-                    System.err.println("Ошибка обработки block-файла: " + file.getName());
-                    exception.printStackTrace();
-                }
-            } else {
-                // Если файл не содержит префикс "block_", добавляем его без изменений
-                processedFiles.add(file);
-            }
-        }
-        // Возвращаем массив с новыми файлами для дальнейшей генерации
-        return processedFiles.toArray(new File[0]);
-    }
-
-    // Метод для открытия файла tags.csv для последующего редактирования
-    private void openCSVFile(String filePath) {
-        try {
-            File csvFile = new File(filePath);
-            if (csvFile.exists()) {
-                Desktop.getDesktop().open(csvFile);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
+    // Генерация документов для одного или нескольких пакетов
     private void fillTagsAndCallGeneration() {
-        generateFileUsingTable = new GenerateFileUsingTable();
-        List<TagMap> tagMaps = generateFileUsingTable.readTableFile(csvFilePath);
+        List<TagMap> tagMaps = tagExtractor.readTableFile(csvFilePath);
         if (!checkTagValues(tagMaps)) {
             return;
         }
-        String outputFolderPath = documentGenerator.getOutputFolderPath();
+        String outputFolderPath = fileManager.getOutputFolderPath();
         for (int i = 0; i < tagMaps.size(); i++){
-            documentGenerator.setOutputFolderPath(outputFolderPath + File.separator + "Пакет " + (i + 1));
+            fileManager.setOutputFolderPath(outputFolderPath + File.separator + "Пакет " + (i + 1));
             documentGenerator.generateDocument(tagMaps.get(i), selectedFiles);
         }
-        documentGenerator.setOutputFolderPath(outputFolderPath);
-        documentGenerator.openFolder(outputFolderPath);
+        fileManager.setOutputFolderPath(outputFolderPath);
+        fileManager.openFileOrFolder(outputFolderPath);
     }
 
     // Проверяем значения для специфичных тегов
