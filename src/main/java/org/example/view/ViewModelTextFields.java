@@ -1,6 +1,4 @@
 package org.example.view;
-
-import org.example.controller.BlockProcessor;
 import org.example.controller.DocumentGenerator;
 import org.example.controller.FileManager;
 import org.example.main.Main;
@@ -14,14 +12,15 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ViewModelTextFields extends JPanel {
     private Main main;
     private DocumentGenerator documentGenerator;
-    private FileManager fileManager;
     private TagExtractor tagExtractor;
     private JButton generateButton;
     public JButton buttonBackSpace;
@@ -33,6 +32,7 @@ public class ViewModelTextFields extends JPanel {
     private JPanel textFieldPanel;
     private JScrollPane scrollPane;
     private JScrollPane scrollPaneButton;
+    private ViewModelTable viewModelTable;
     private JPanel buttonPanel;
     private HashMap<String, List<String>> fileTagMap;
     private Map<String, String> tagValuesMap; // Map to store tag values
@@ -40,20 +40,25 @@ public class ViewModelTextFields extends JPanel {
     private File[] selectedFiles;
     private TagMap tagMap;
     private final Map<String, JTextField> specificFields = new HashMap<>();
+    private boolean isEditMode = false;
+    private JButton saveButton;
+    private FileManager fileManager;
 
-    ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator,
-                        FileManager fileManager, TagExtractor tagExtractor) {
+    ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable, FileManager fileManager, TagExtractor tagExtractor) {
         this.main = main;
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
+        this.viewModelTable = viewModelTable;
+        this.tagDatabase = new TagDatabase();
         this.fileManager = fileManager;
         this.tagExtractor = tagExtractor;
-        this.tagDatabase = new TagDatabase();
         ViewStyles.stylePanel(this);
         setLayout(null);
         setFocusable(true);
         tagValuesMap = new HashMap<>();
         initializeUI();
+        setupMode();
+        clearAll();
         // Добавляем слушатель для изменения размеров панели
         this.addComponentListener(new ComponentAdapter() {
             @Override
@@ -61,6 +66,80 @@ public class ViewModelTextFields extends JPanel {
                 adjustScrollPaneSizes();
             }
         });
+    }
+
+    private void setupMode() {
+        System.out.println(isEditMode);
+        if (isEditMode) {
+            enterEditMode();
+        } else {
+            exitEditMode();
+        }
+    }
+    private void enterEditMode() {
+        generateButton.setVisible(false);
+        clearButton.setText("Сохранить в БД");
+
+        // Удаляем все старые обработчики кнопки
+        for (ActionListener al : chooseFileButton.getActionListeners()) {
+            chooseFileButton.removeActionListener(al);
+        }
+
+        // Добавляем новый обработчик
+        chooseFileButton.addActionListener(e -> handleFileSelectionInEditMode());
+
+        // Очищаем панель с кнопками файлов
+        removeFileButtons();
+        chooseFileLabel.setText("Файлы не выбраны");
+
+        // Загружаем теги: если есть выбранные файлы, их теги, иначе все из БД
+        if (fileTagMap != null && !fileTagMap.isEmpty()) {
+            generateTextFields(getAllTags(fileTagMap));
+        } else {
+            loadAllTagsFromDatabase();
+        }
+    }
+    private void handleFileSelectionInEditMode() {
+        FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
+        fileDialog.setFile("*.doc;*.docx");
+        fileDialog.setMultipleMode(true);
+        fileDialog.setVisible(true);
+        File[] newSelectedFiles = fileDialog.getFiles();
+
+        if (newSelectedFiles != null && newSelectedFiles.length > 0) {
+            selectedFiles = fileManager.preprocessBlockFiles(newSelectedFiles);
+            fileTagMap = tagExtractor.writeTagsToMap(selectedFiles);
+
+            // Добавляем новые теги в БД
+            Set<String> newTags = new HashSet<>(getAllTags(fileTagMap));
+            for (String tag : newTags) {
+                if (!tagDatabase.getAllTags().contains(tag)) {
+                    tagDatabase.saveTag(tag);
+                }
+            }
+            adjustScrollPaneSizes();
+            generateFileButtons(fileTagMap);
+            generateTextFields(getAllTags(fileTagMap)); // Заменяем loadAllTagsFromDatabase()
+        }
+    }
+
+    private void exitEditMode() {
+        generateButton.setVisible(true);
+        clearButton.setText("Очистить ввод");
+
+        // Удаляем все старые обработчики кнопки
+        for (ActionListener al : chooseFileButton.getActionListeners()) {
+            chooseFileButton.removeActionListener(al);
+        }
+
+        chooseFileButton.addActionListener(e -> handleNormalModelFileSelection());
+    }
+
+    public void setEditMode(boolean editMode) {
+        isEditMode = editMode;
+        setupMode();
+        revalidate();
+        repaint();
     }
     private void adjustScrollPaneSizes() {
         // Получаем родительский контейнер (окно)
@@ -133,15 +212,27 @@ public class ViewModelTextFields extends JPanel {
 
     private boolean areAllTextFieldsFilled() {
         for (JTextField textField : findTextFields()) {
-            String placeholder = (String) textField.getClientProperty("placeholder"); // Получаем плейсхолдер
             String text = textField.getText().trim();
-
-            // Проверяем, заполнено ли текстовое поле
-            if (text.isEmpty() || text.equals(placeholder)) {
-                return false; // Если текстовое поле пустое или равно плейсхолдеру, возвращаем false
+            if (isEditMode) {
+                if (text.isEmpty()) {
+                    return false;
+                }
+            } else {
+                String placeholder = (String) textField.getClientProperty("placeholder");
+                String tag = (String) textField.getClientProperty("tag");
+                if (placeholder == null || tag == null) {
+                    if (text.isEmpty()) {
+                        return false;
+                    }
+                } else {
+                    String displayedPlaceholder = placeholder + " (" + tag + ")";
+                    if (text.isEmpty() || text.equals(displayedPlaceholder)) {
+                        return false;
+                    }
+                }
             }
         }
-        return true; // Все текстовые поля заполнены корректно
+        return true;
     }
 
     private void updateGenerateButtonState() {
@@ -159,6 +250,9 @@ public class ViewModelTextFields extends JPanel {
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if(isEditMode){
+                    clearAll();
+                }
                 main.switchToPanel(viewModelStartScreen);
             }
         });
@@ -172,65 +266,17 @@ public class ViewModelTextFields extends JPanel {
         chooseFileButton = new JButton("Выбор файлов (doc/docx)");
         chooseFileButton.setBounds(300, 80, 200, 50); // Устанавливаем фиксированные размеры
         ViewStyles.styleButton(chooseFileButton);
-        chooseFileButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
-                fileDialog.setFile("*.doc;*.docx");
-                fileDialog.setMultipleMode(true);
-                fileDialog.setVisible(true);
-                File[] newSelectedFiles = fileDialog.getFiles();
-
-                // Если выбор не произведен (массив пуст или null), сохраняем предыдущие выбранные файлы
-                if (newSelectedFiles == null || newSelectedFiles.length == 0) {
-                    JOptionPane optionPane = new JOptionPane(
-                            "Выбор файлов не изменён.",
-                            JOptionPane.INFORMATION_MESSAGE,
-                            JOptionPane.DEFAULT_OPTION
-                    );
-
-                    // Стилизуем окно с сообщением
-                    ViewStyles.styleOptionPane(optionPane);
-
-                    // Создаем и стилизуем диалог
-                    JDialog dialog = optionPane.createDialog(null, "Информация");
-                    dialog.setVisible(true);
-
-                    return;
-                }
-
-                // Если выбор был произведён, обновляем массив и остальные элементы
-                selectedFiles = newSelectedFiles;
-                selectedFiles = fileManager.preprocessBlockFiles(selectedFiles);
-                removeTextFields();
-                removeFileButtons();
-                tagValuesMap.clear();
-
-                chooseFileLabel.setText("Выбранные файлы: ");
-                viewModelStartScreen.select = new String[selectedFiles.length];
-                for (int i = 0; i < selectedFiles.length; i++) {
-                    viewModelStartScreen.select[i] = selectedFiles[i].getName();
-                }
-                fileTagMap = tagExtractor.writeTagsToMap(selectedFiles);
-                generateFileButtons(fileTagMap);
-                generateTextFields(getAllTags(fileTagMap));
-            }
-        });
         add(chooseFileButton);
         clearButton = new JButton("Очистить ввод");
         ViewStyles.styleButton(clearButton);
-        clearButton.setBounds(500, 80, 100, 50);
-        clearButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-//                removeTextFields();
-//                removeFileButtons();
+        clearButton.setBounds(500, 80, 150, 50); // Увеличиваем ширину
+        clearButton.addActionListener(e -> {
+            if (isEditMode) {
+                savePlaceholdersToDatabase();
+            } else {
                 clearTextFields();
                 tagValuesMap.clear();
-//                chooseFileLabel.setText("Файлы не выбраны");
                 generateButton.setEnabled(false);
-                revalidate();
-                repaint();
             }
         });
         add(clearButton);
@@ -279,76 +325,265 @@ public class ViewModelTextFields extends JPanel {
         ViewStyles.styleScrollBar(scrollPaneButton.getVerticalScrollBar());
         add(scrollPaneButton);
     }
+    private void handleNormalModelFileSelection(){
+        FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
+        fileDialog.setFile("*.doc;*.docx");
+        fileDialog.setMultipleMode(true);
+        fileDialog.setVisible(true);
+        File[] newSelectedFiles = fileDialog.getFiles();
 
+        // Если выбор не произведен (массив пуст или null), сохраняем предыдущие выбранные файлы
+        if (newSelectedFiles == null || newSelectedFiles.length == 0) {
+            JOptionPane optionPane = new JOptionPane(
+                    "Выбор файлов не изменён.",
+                    JOptionPane.INFORMATION_MESSAGE,
+                    JOptionPane.DEFAULT_OPTION
+            );
+
+            // Стилизуем окно с сообщением
+            ViewStyles.styleOptionPane(optionPane);
+
+            // Создаем и стилизуем диалог
+            JDialog dialog = optionPane.createDialog(null, "Информация");
+            dialog.setVisible(true);
+
+            return;
+        }
+
+        // Если выбор был произведён, обновляем массив и остальные элементы
+        selectedFiles = newSelectedFiles;
+        selectedFiles = fileManager.preprocessBlockFiles(selectedFiles);
+        tagValuesMap.clear();
+
+        chooseFileLabel.setText("Выбранные файлы: ");
+        viewModelStartScreen.select = new String[selectedFiles.length];
+        for (int i = 0; i < selectedFiles.length; i++) {
+            viewModelStartScreen.select[i] = selectedFiles[i].getName();
+        }
+        fileTagMap = tagExtractor.writeTagsToMap(selectedFiles);
+        fileTagMap = filterTagsByAuthorCount(fileTagMap, viewModelStartScreen.selectedNumber);
+        generateFileButtons(fileTagMap);
+        generateTextFields(getAllTags(fileTagMap));
+    }
+    private void processTextFieldChange(JTextField textField, String tag) {
+        String inputText = textField.getText().trim();
+
+        // Валидация тегов, зависимых от количества авторов
+        if (tag.matches(".*author\\d+_.*")) {
+            int maxAuthors = viewModelStartScreen.authorComboBox.getItemCount();
+            Pattern p = Pattern.compile("author(\\d+)");
+            Matcher m = p.matcher(tag);
+            if (m.find()) {
+                int tagAuthorNum = Integer.parseInt(m.group(1));
+                if (tagAuthorNum > maxAuthors) {
+                    textField.setEnabled(false);
+                    textField.setBackground(Color.LIGHT_GRAY);
+                    return;
+                }
+            }
+        }
+    }
+    private HashMap<String, List<String>> filterTagsByAuthorCount(
+            HashMap<String, List<String>> fileTagMap,
+            int authorCount
+    ) {
+        HashMap<String, List<String>> filteredMap = new HashMap<>();
+
+        for (Map.Entry<String, List<String>> entry : fileTagMap.entrySet()) {
+            List<String> filteredTags = new ArrayList<>();
+            for (String tag : entry.getValue()) {
+                if (isTagRelevantForAuthorCount(tag, authorCount)) {
+                    filteredTags.add(tag);
+                }
+            }
+            filteredMap.put(entry.getKey(), filteredTags);
+        }
+        return filteredMap;
+    }
+
+    private boolean isTagRelevantForAuthorCount(String tag, int authorCount) {
+        // Пример фильтрации тегов вида ${authorX_email}
+        Pattern pattern = Pattern.compile("\\$\\{author(\\d+)_");
+        Matcher matcher = pattern.matcher(tag);
+
+        if (matcher.find()) {
+            int tagAuthorNumber = Integer.parseInt(matcher.group(1));
+            return tagAuthorNumber <= authorCount;
+        }
+        return true; // Оставляем теги, не связанные с авторами
+    }
+    private void loadAllTagsFromDatabase() {
+        List<String> allTags = tagDatabase.getAllTags();
+        generateTextFields(allTags);
+    }
+
+    private void savePlaceholdersToDatabase() {
+        for (JTextField textField : findTextFields()) {
+            String tag = (String) textField.getClientProperty("originalTag"); // Используем originalTag для edit mode
+            if (tag == null) tag = (String) textField.getClientProperty("tag"); // Для normal mode
+
+            String placeholder = textField.getText().trim();
+
+            if (tag != null) {
+                // Сохраняем даже пустые значения, но с проверкой
+                if (placeholder.isEmpty()) {
+                    tagDatabase.saveTag(tag, tag); // Сохраняем тег как подсказку по умолчанию
+                } else {
+                    tagDatabase.saveTag(tag, placeholder);
+                }
+            }
+        }
+        JOptionPane.showMessageDialog(this, "Все подсказки сохранены в БД");
+    }
+    private boolean isTagRelevant(String tag, int selectedAuthors) {
+        // Логика определения релевантности тега для выбранного количества авторов
+        if (tag.contains("author")) {
+            Pattern p = Pattern.compile("author(\\d+)");
+            Matcher m = p.matcher(tag);
+            if (m.find()) {
+                int authorNum = Integer.parseInt(m.group(1));
+                return authorNum <= selectedAuthors;
+            }
+        }
+        return true;
+    }
+    private String extractTagFromTextField(JTextField textField) {
+        String placeholder = (String) textField.getClientProperty("placeholder");
+        if (placeholder != null) {
+            return placeholder.substring(placeholder.indexOf("(") + 1, placeholder.indexOf(")"));
+        }
+        return null;
+    }
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
     }
 
-    // метод для добавления подсказок в текстовые поля
-    private void addPlaceholder(JTextField textField, String tag) {
-        // Сохраняем текущее текстовое поле только если его тег входит в список интересующих
-        boolean isSpecificTag = tag.equals("${key_ria_type_x_pr}") ||
-                tag.equals("${key_ria_type_x_bd59}") ||
-                tag.equals("${key_ria_type_x_bd34}");
-        if (isSpecificTag) {
-            specificFields.put(tag, textField);
-        }
 
-        String placeholder = tagDatabase.getPlaceholder(tag);
-        if (placeholder == null) {
-            placeholder = tag;
-            tagDatabase.saveTag(tag);
-        }
+    // Способ динамической генерации текстовых полей тегов с заполнителями
+    private void generateTextFields(List<String> tags) {
+        textFieldPanel.removeAll();
+        tags = tags.stream()
+                .sorted()
+                .filter(tag -> isTagRelevant(tag, viewModelStartScreen.selectedNumber))
+                .collect(Collectors.toList());
 
-        // Добавляем тег в скобках к плейсхолдеру
-        placeholder += " (" + tag + ")";
+        System.out.println("Generating text fields for " + tags.size() + " tags");
 
-        textField.setText(placeholder);
-        textField.setForeground(Color.GRAY);
-        textField.putClientProperty("placeholder", placeholder); // Сохраняем плейсхолдер в свойство текстового поля
+        List<JTextField> textFields = new ArrayList<>(); // Список для хранения всех полей
+        int padding = 10;
+        int topPadding = 10;
+        int fieldHeight = 30;
 
-        String finalPlaceholder = placeholder;
+        textFieldPanel.setPreferredSize(new Dimension(
+                textFieldPanel.getWidth(),
+                tags.size() * (fieldHeight + topPadding) + topPadding
+        ));
 
-        // Добавляем DocumentListener для отслеживания изменений текста
-        textField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                processTextFieldChange();
+        for (int i = 0; i < tags.size(); i++) {
+            String tag = tags.get(i);
+            JTextField textField = new JTextField();
+            if (SPECIAL_TAGS.contains(tag)) {
+                specificFields.put(tag, textField);
+            }
+            textFields.add(textField); // Добавляем поле в список
+
+            final int currentIndex = i; // Фиксируем индекс для лямбда-выражения
+
+            // Настройка позиционирования и стиля
+            int yPos = topPadding + i * (fieldHeight + topPadding);
+            textField.setBounds(padding, yPos, textFieldPanel.getWidth() - 2 * padding, fieldHeight);
+
+            // Настройка режима
+            if (isEditMode) {
+                setupTextFieldForEditMode(textField, tag);
+            } else {
+                setupTextFieldForNormalMode(textField, tag);
             }
 
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                processTextFieldChange();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                processTextFieldChange();
-            }
-
-            private void processTextFieldChange() {
-                String inputText = textField.getText().trim();
-
-                // Выполняем проверку только для специальных тегов
-                if (isSpecificTag) {
-                    if (!inputText.equals("0") && !inputText.equals("1") && !inputText.isEmpty()) {
-                        textField.setBackground(Color.RED); // Изменяем фон на красный при ошибке
-                    } else {
-                        textField.setBackground(Color.WHITE); // Восстанавливаем стандартный фон
-                        tagValuesMap.put(tag, inputText); // Сохраняем значение
-                        updateSpecificFields(tag, inputText); // Обновляем связанные поля
+            ViewStyles.styleTextField(textField);
+            textFieldPanel.add(textField);
+            adjustTextFieldSizes();
+            // Добавляем слушатель клавиш
+            textField.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_UP) {
+                        if (currentIndex > 0) {
+                            JTextField prevField = textFields.get(currentIndex - 1);
+                            prevField.requestFocusInWindow();
+                            fieldVisibility(prevField);
+                        }
+                    } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                        if (currentIndex < textFields.size() - 1) {
+                            JTextField nextField = textFields.get(currentIndex + 1);
+                            nextField.requestFocusInWindow();
+                            fieldVisibility(nextField);
+                        }
                     }
-                } else {
-                    tagValuesMap.put(tag, inputText); // Просто сохраняем значение для других тегов
                 }
-            }
-        });
+            });
 
-        textField.addFocusListener(new FocusListener() {
+            // Существующий DocumentListener
+            textField.getDocument().addDocumentListener(new DocumentListener() {
+                public void changedUpdate(DocumentEvent e) { updateGenerateButtonState(); }
+                public void removeUpdate(DocumentEvent e) { updateGenerateButtonState(); }
+                public void insertUpdate(DocumentEvent e) { updateGenerateButtonState(); }
+            });
+        }
+
+        textFieldPanel.revalidate();
+        textFieldPanel.repaint();
+    }
+
+    private void setupTextFieldForEditMode(JTextField textField, String tag) {
+        // Получаем текущий плейсхолдер из БД
+        String currentPlaceholder = tagDatabase.getPlaceholder(tag);
+
+        // Устанавливаем текст поля
+        textField.setText(currentPlaceholder != null ? currentPlaceholder : "");
+
+        // Настройки визуализации
+        textField.setForeground(Color.BLACK);
+        textField.setBackground(Color.WHITE);
+
+        // Сохраняем оригинальный тег в свойствах поля
+        textField.putClientProperty("originalTag", tag);
+
+        // Убираем плейсхолдер-эффекты
+        textField.putClientProperty("placeholder", null);
+    }
+    private final Set<String> SPECIAL_TAGS = Set.of(
+            "${key_ria_type_x_pr}",
+            "${key_ria_type_x_bd59}",
+            "${key_ria_type_x_bd34}"
+    );
+
+    private void setupTextFieldForNormalMode(JTextField textField, String tag) {
+        // Получаем плейсхолдер из БД
+        String placeholder = tagDatabase.getPlaceholder(tag);
+
+        // Если значение уже введено - используем его
+        String currentValue = tagValuesMap.getOrDefault(tag, "");
+
+        if (!currentValue.isEmpty()) {
+            textField.setText(currentValue);
+            textField.setForeground(Color.BLACK);
+        } else {
+            // Форматируем отображение плейсхолдера
+            String displayText = placeholder + " (" + tag + ")";
+            textField.setText(displayText);
+            textField.setForeground(Color.GRAY);
+        }
+
+        textField.putClientProperty("placeholder", placeholder);
+        textField.putClientProperty("tag", tag); // Сохраняем оригинальный тег
+
+        // Обработчики фокуса
+        textField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
-                if (textField.getText().equals(finalPlaceholder)) {
+                if (textField.getText().equals(placeholder + " (" + tag + ")")) {
                     textField.setText("");
                     textField.setForeground(Color.BLACK);
                 }
@@ -356,98 +591,65 @@ public class ViewModelTextFields extends JPanel {
 
             @Override
             public void focusLost(FocusEvent e) {
-                String inputText = textField.getText().trim();
-
-                // Если поле пустое, сохраняем плейсхолдер как значение
-                if (inputText.isEmpty()) {
+                String input = textField.getText().trim();
+                if (input.isEmpty()) {
+                    String displayedPlaceholder = placeholder + " (" + tag + ")";
+                    textField.setText(displayedPlaceholder);
                     textField.setForeground(Color.GRAY);
-                    textField.setText(finalPlaceholder);
+                    tagValuesMap.remove(tag); // Удаляем значение, если поле пустое
+                } else {
+                    tagValuesMap.put(tag, input);
                 }
             }
         });
-    }
-
-    private void updateSpecificFields(String currentTag, String inputValue) {
-        if ("1".equals(inputValue)) {
-            for (Map.Entry<String, JTextField> entry : specificFields.entrySet()) {
-                String otherTag = entry.getKey();
-                JTextField otherField = entry.getValue();
-                if (!otherTag.equals(currentTag)) {
-                    otherField.setText("0");
-                    otherField.setForeground(Color.BLACK); // Чтобы пользователь видел изменения
-                }
-            }
-        }
-    }
-
-    // Способ динамической генерации текстовых полей тегов с заполнителями
-    private void generateTextFields(List<String> tags) {
-        textFieldPanel.removeAll();
-        System.out.println(tagValuesMap);
-        int padding = 10; // Отступы по бокам
-        int topPadding = 10; // Отступ сверху для первого элемента
-        textFieldPanel.setPreferredSize(new Dimension(textFieldPanel.getWidth(), tags.size() * 40 + topPadding));
-        JTextField[] textFields = new JTextField[tags.size()];
-
-        for (int i = 0; i < tags.size(); i++) {
-            int currentIndex = i;
-            textFields[i] = new JTextField();
-            textFields[i].setBounds(padding, topPadding + i * 40, textFieldPanel.getWidth() - 2 * padding, 30); // Учет отступов
-            String tag = tags.get(i);
-            addPlaceholder(textFields[i], tag); // Устанавливаем текст-заполнитель из обработанного тега
-            ViewStyles.styleTextField(textFields[i]);
-
-            // Устанавливаем текст, если он уже есть в tagValuesMap
-            if (tagValuesMap.containsKey(tag)) {
-                textFields[i].setText(tagValuesMap.get(tag));
-                textFields[i].setForeground(Color.BLACK);
-            }
-
-            textFields[i].addKeyListener(new KeyAdapter() {
-                @Override
-                public void keyPressed(KeyEvent e) {
-                    if (e.getKeyCode() == KeyEvent.VK_UP) { // Стрелка вверх
-                        if (currentIndex > 0) {
-                            JTextField previousField = textFields[currentIndex - 1];
-                            previousField.requestFocus(); // Переход к предыдущему полю
-                            fieldVisibility(previousField);
-                        }
-                    } else if (e.getKeyCode() == KeyEvent.VK_DOWN) { // Стрелка вниз
-                        if (currentIndex < textFields.length - 1) {
-                            JTextField nextField = textFields[currentIndex + 1];
-                            nextField.requestFocus(); // Переход к следующему полю
-                            fieldVisibility(nextField);
-                        }
-                    }
-                }
-            });
-
-
-            // Добавляем DocumentListener для обновления состояния кнопки генерации
-            textFields[i].getDocument().addDocumentListener(new DocumentListener() {
+        if (SPECIAL_TAGS.contains(tag)) {
+            textField.getDocument().addDocumentListener(new DocumentListener() {
                 @Override
                 public void insertUpdate(DocumentEvent e) {
-                    updateGenerateButtonState(); // Проверка при вставке текста
+                    handleSpecialTagInput(tag, textField);
                 }
 
                 @Override
                 public void removeUpdate(DocumentEvent e) {
-                    updateGenerateButtonState(); // Проверка при удалении текста
+                    handleSpecialTagInput(tag, textField);
                 }
 
                 @Override
                 public void changedUpdate(DocumentEvent e) {
-                    updateGenerateButtonState(); // Проверка при изменении текста
+                    handleSpecialTagInput(tag, textField);
                 }
             });
-
-            textFieldPanel.add(textFields[i]);
         }
-        updateGenerateButtonState();
-        textFieldPanel.revalidate();
-        textFieldPanel.repaint();
-        scrollPane.revalidate();
-        scrollPane.repaint();
+    }
+    private void handleSpecialTagInput(String changedTag, JTextField changedField) {
+        String input = changedField.getText().trim();
+
+        if ("1".equals(input)) {
+            changedField.setBackground(new Color(220, 255, 220));
+            for (String specialTag : SPECIAL_TAGS) {
+                if (!specialTag.equals(changedTag)) {
+                    JTextField otherField = findTextFieldByTag(specialTag);
+                    if (otherField != null) {
+                        otherField.setText("0");
+                        tagValuesMap.put(specialTag, "0");
+                    }
+                }
+            }
+        }else {
+            changedField.setBackground(Color.WHITE);
+        }
+    }
+    private JTextField findTextFieldByTag(String tag) {
+        for (Component comp : textFieldPanel.getComponents()) {
+            if (comp instanceof JTextField) {
+                JTextField tf = (JTextField) comp;
+                String fieldTag = (String) tf.getClientProperty("tag");
+                if (tag.equals(fieldTag)) {
+                    return tf;
+                }
+            }
+        }
+        return null;
     }
 
     public List<JTextField> findTextFields() {
@@ -461,7 +663,7 @@ public class ViewModelTextFields extends JPanel {
         return textFields;
     }
 
-    private void removeTextFields() {
+    void removeTextFields() {
         textFieldPanel.removeAll();
         textFieldPanel.revalidate();
         textFieldPanel.repaint();
@@ -469,7 +671,7 @@ public class ViewModelTextFields extends JPanel {
         scrollPane.repaint();
     }
 
-    private void removeFileButtons(){
+    void removeFileButtons(){
         buttonPanel.removeAll();
         buttonPanel.revalidate();
         buttonPanel.repaint();
@@ -481,63 +683,63 @@ public class ViewModelTextFields extends JPanel {
         buttonPanel.removeAll();
         chooseFileLabel.setText("Выбранные файлы: Показать все теги");
 
-        // Устанавливаем BoxLayout для buttonPanel (вертикальное расположение)
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
-        buttonPanel.add(Box.createVerticalStrut(10));  // 10 пикселей отступа
+        buttonPanel.add(Box.createVerticalStrut(10));
 
-        // Кнопка "Показать все теги"
         showAllTagsButton = new JButton("Показать все теги");
         ViewStyles.styleButton(showAllTagsButton);
         showAllTagsButton.setPreferredSize(new Dimension(400, 50));
         showAllTagsButton.setMaximumSize(new Dimension(400, 50));
         showAllTagsButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        showAllTagsButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+
+        // Модифицированный обработчик для кнопки "Показать все теги"
+        showAllTagsButton.addActionListener(e -> {
+            if (isEditMode) {
+                loadAllTagsFromDatabase();
+            } else {
                 generateTextFields(getAllTags(fileTagMap));
-                chooseFileLabel.setText("Выбранный файл: " + showAllTagsButton.getText());
             }
+            chooseFileLabel.setText("Выбранный файл: " + showAllTagsButton.getText());
         });
 
-        // Добавляем кнопку "Показать все теги"
         if (selectedFiles.length != 0)
             buttonPanel.add(showAllTagsButton);
-        buttonPanel.add(Box.createVerticalStrut(10));  // 10 пикселей отступа
-        // Кнопки для конкретных файлов
+        buttonPanel.add(Box.createVerticalStrut(10));
+
         for (String fileName : fileTagMap.keySet()) {
             JButton fileButton = new JButton(fileName);
             fileButton.setPreferredSize(new Dimension(400, 50));
             fileButton.setMaximumSize(new Dimension(400, 50));
             fileButton.setAlignmentX(Component.CENTER_ALIGNMENT);
             ViewStyles.styleButton(fileButton);
-            fileButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    chooseFileLabel.setText("Выбранный файл: " + fileName); // Установка имени файла
-                    List<String> tags = fileTagMap.get(fileName);
-                    generateTextFields(tags); // Генерация текстовых полей для выбранного файла
-                }
+            fileButton.addActionListener(e -> {
+                chooseFileLabel.setText("Выбранный файл: " + fileName);
+                List<String> tags = fileTagMap.get(fileName);
+                generateTextFields(tags);
             });
-
-            // Добавляем кнопку для каждого файла
             buttonPanel.add(fileButton);
-            // Добавляем отступ после каждой кнопки
-            buttonPanel.add(Box.createVerticalStrut(10));  // 10 пикселей отступа
+            buttonPanel.add(Box.createVerticalStrut(10));
         }
 
-        // Обновляем buttonPanel
         buttonPanel.revalidate();
         buttonPanel.repaint();
     }
 
-    private void closeDatabase() {
-        tagDatabase.close(); // Method to close the database connection
-    }
-
     private void clearTextFields() {
         for (JTextField textField : findTextFields()) {
-            textField.setText(""); // Очищаем текстовое поле
-            textField.setText((String) textField.getClientProperty("placeholder")); // Устанавливаем плейсхолдер
+            if (isEditMode) {
+                // В режиме редактирования загружаем текущие значения из БД
+                String tag = (String) textField.getClientProperty("originalTag");
+                String placeholder = tagDatabase.getPlaceholder(tag);
+                textField.setText(placeholder != null ? placeholder : "");
+            } else {
+                // В обычном режиме устанавливаем плейсхолдеры
+                String placeholder = (String) textField.getClientProperty("placeholder");
+                if (placeholder != null) {
+                    textField.setText(placeholder + " (" + textField.getClientProperty("tag") + ")");
+                    textField.setForeground(Color.BLACK);
+                }
+            }
         }
     }
 
@@ -559,38 +761,87 @@ public class ViewModelTextFields extends JPanel {
 
     // Функция заполнения значений тегов
     private void fillTags() {
-        // Получаем список тегов
-        Set<String> tags = tagExtractor.getUniqueTags();
-        // Получаем список всех текстовых полей из ViewModel
-        List<JTextField> textFields = findTextFields();
-        // Проверяем, что количество текстовых полей соответствует количеству тегов
-        if (textFields.size() != tags.size()) {
-            System.out.println(textFields.size());
-            System.out.println(tags.size());
-            System.out.println("Количество текстовых полей не соответствует количеству тегов.");
-            return; // Возможно, стоит бросить исключение здесь
-        }
-        // Очищаем TagMap перед заполнением новыми значениями
         tagMap = new TagMap();
-        // Проходим по всем текстовым полям и соответствующим тегам
-        Iterator<String> tagsIterator = tags.iterator();
-        for (JTextField textField : textFields) {
-            if (tagsIterator.hasNext()) {
-                String tag = tagsIterator.next(); // Получаем текущий тег
-                String value = textField.getText(); // Получаем значение из соответствующего текстового поля
-                // Добавляем тег и его значение в TagMap
-                tagMap.addTag(tag, value);
-            }
+        for (JTextField textField : findTextFields()) {
+            String tag = (String) textField.getClientProperty("tag");
+            String value = textField.getForeground() == Color.GRAY ? "" : textField.getText().trim();
+            tagMap.addTag(tag, value);
         }
     }
 
     private void fillTagsAndCallGeneration() {
-        // Вызываем метод создания основной папки
+        if (!checkSpecialTags()) return;
+
         fileManager.createFolder();
-        // Заполнение тегов
         fillTags();
-        // Генерируем документ
         documentGenerator.generateDocument(tagMap, selectedFiles);
         fileManager.openFileOrFolder(fileManager.getOutputFolderPath());
+    }
+    private boolean checkSpecialTags() {
+        // Собираем все специальные теги с проверкой на null
+        List<JTextField> specialFields = findTextFields().stream()
+                .filter(tf -> {
+                    String tag = (String) tf.getClientProperty("tag");
+                    String originalTag = (String) tf.getClientProperty("originalTag");
+
+                    // Проверяем, что тег не null и содержится в SPECIAL_TAGS
+                    boolean isSpecial = (tag != null && SPECIAL_TAGS.contains(tag)) ||
+                            (originalTag != null && SPECIAL_TAGS.contains(originalTag));
+                    return isSpecial;
+                })
+                .collect(Collectors.toList());
+
+        // Если нет полей с специальными тегами - пропускаем проверку
+        if (specialFields.isEmpty()) return true;
+
+        // Проверяем наличие хотя бы одной "1"
+        boolean hasOne = specialFields.stream()
+                .anyMatch(field -> {
+                    String value = field.getText().trim();
+
+                    // В режиме редактирования проверяем напрямую
+                    if (isEditMode) {
+                        return "1".equals(value);
+                    }
+
+                    // В обычном режиме игнорируем плейсхолдеры
+                    return field.getForeground() != Color.GRAY && "1".equals(value);
+                });
+
+        if (!hasOne) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Должна быть выбрана минимум одна опция:\n"
+                            + String.join("\n", SPECIAL_TAGS),
+                    "Ошибка ввода",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return false;
+        }
+        return true;
+    }
+    private void clearAll() {
+        // Очищаем текстовые поля
+        removeTextFields();
+
+        // Очищаем кнопки
+        removeFileButtons();
+
+        // Очищаем выбранные файлы
+        selectedFiles = null;
+
+        // Очищаем карту тегов
+        tagValuesMap.clear();
+
+        // Сбрасываем состояние кнопки генерации
+        generateButton.setEnabled(false);
+
+        // Обновляем метку выбора файла
+        chooseFileLabel.setText("Файлы не выбраны");
+
+        // Очищаем карту файлов и тегов
+        if (fileTagMap != null) {
+            fileTagMap.clear();
+        }
     }
 }

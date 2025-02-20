@@ -27,7 +27,8 @@ public class ViewModelStartScreen extends JPanel {
     private JLabel labelChooseCountOfAuthor;
     private JButton buttonGenerateWithTextFields;
     private JButton buttonGenerateWithTable;
-    private JComboBox<Integer> authorComboBox;
+    private JButton buttonEditPlaceholders;
+    public JComboBox<Integer> authorComboBox;
     private JLabel universityLabel;
     public static BufferedImage logo;
     public boolean verification;
@@ -47,7 +48,7 @@ public class ViewModelStartScreen extends JPanel {
         this.documentGenerator = documentGenerator;
         this.fileManager = fileManager;
         this.tagExtractor = new TagExtractor();
-        viewModelTextFields = new ViewModelTextFields(main,this, documentGenerator, fileManager, tagExtractor);
+        viewModelTextFields = new ViewModelTextFields(main,this, documentGenerator, viewModelTable,fileManager, tagExtractor);
         viewModelTable = new ViewModelTable(main,this, documentGenerator, fileManager, tagExtractor);
 
         initializeStartScreen();
@@ -71,13 +72,13 @@ public class ViewModelStartScreen extends JPanel {
         add(labelChooseCountOfAuthor, gbc);
 
         // Создаем и стилизуем JComboBox для выбора количества авторов
-        Integer[] numbers = new Integer[10];
-        for (int i = 0; i < 10; i++) {
+        Integer[] numbers = new Integer[9];
+        for (int i = 0; i < 9; i++) {
             numbers[i] = i + 1;
         }
         authorComboBox = new JComboBox<>(numbers);
         ViewStyles.styleComboBox(authorComboBox);
-        authorComboBox.setMaximumRowCount(10);
+        authorComboBox.setMaximumRowCount(9);
         authorComboBox.setPreferredSize(COMPONENT_SIZE); // Устанавливаем размер
         gbc.insets = new Insets(0, 0, 5, 0); // Сброс отступов для остальных элементов
         gbc.gridy = 3;
@@ -160,12 +161,10 @@ public class ViewModelStartScreen extends JPanel {
         gbc.insets = new Insets(0, 0, 5, 0); // Сброс отступов для остальных элементов
         gbc.gridy = 8;
         add(buttonGenerateWithTextFields, gbc);
-        buttonGenerateWithTextFields.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                main.switchToPanel(viewModelTextFields);
-                verification = true;
-            }
+        buttonGenerateWithTextFields.addActionListener(e -> {
+            viewModelTextFields.setEditMode(false); // Явный сброс режима
+            main.switchToPanel(viewModelTextFields);
+            verification = true;
         });
 
         // Создаем и стилизуем кнопку для генерации с помощью таблицы
@@ -181,6 +180,15 @@ public class ViewModelStartScreen extends JPanel {
                 main.switchToPanel(viewModelTable);
                 verification = false;
             }
+        });
+        buttonEditPlaceholders = new JButton("Редактировать подсказки");
+        ViewStyles.styleButton(buttonEditPlaceholders);
+        buttonEditPlaceholders.setPreferredSize(COMPONENT_SIZE);
+        gbc.gridy = 10;
+        add(buttonEditPlaceholders, gbc);
+        buttonEditPlaceholders.addActionListener(e -> {
+            viewModelTextFields.setEditMode(true);
+            main.switchToPanel(viewModelTextFields);
         });
     }
 
