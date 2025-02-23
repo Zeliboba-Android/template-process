@@ -2,7 +2,9 @@ package org.example.controller;
 
 import org.apache.poi.xwpf.usermodel.*;
 import org.apache.xmlbeans.XmlCursor;
+import org.apache.xmlbeans.impl.values.XmlValueDisconnectedException;
 import org.example.view.ViewModelStartScreen;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTP;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,6 +25,10 @@ public class BlockProcessor {
             "\\$\\{(DUPLICATE|DUPLICATE_AUTHORS)\\(((?:\\d+)|count_authors)(?:,\\s*(\\w+))?\\)\\[(.*?)\\]\\}",
             Pattern.DOTALL
     );
+    private static final Pattern DUPLICATE_AUTHORS_START_PATTERN = Pattern.compile(
+            "\\$\\{DUPLICATE_AUTHORS\\((count_authors|\\d+)(?:,\\s*(\\w+))?\\)\\[",
+            Pattern.DOTALL
+    );
     private static final String MODE_NEWLINE = "newline";
     private static final String MODE_SPACE = "space";
     private static final int DEFAULT_FONT_SIZE = 12;
@@ -33,6 +39,8 @@ public class BlockProcessor {
 
     public void processBlockFile(String newFilePath) throws IOException {
         try (XWPFDocument doc = new XWPFDocument(new FileInputStream(file))) {
+            // Сначала обрабатываем многоабзацные команды
+            processMultiParagraphCommands(doc);
             // Обработка параграфов документа – итерируемся по копии списка, поскольку могут быть ситуации,
             // когда необходимо добавить параграфы
             List<XWPFParagraph> paragraphs = new ArrayList<>(doc.getParagraphs());
@@ -43,6 +51,7 @@ public class BlockProcessor {
             for (XWPFTable table : doc.getTables()) {
                 for (XWPFTableRow row : table.getRows()) {
                     for (XWPFTableCell cell : row.getTableCells()) {
+                        processMultiParagraphCommands(cell);
                         // Итерируемся по копии списка параграфов ячейки
                         List<XWPFParagraph> cellParagraphs = new ArrayList<>(cell.getParagraphs());
                         for (XWPFParagraph p : cellParagraphs) {
@@ -55,8 +64,110 @@ public class BlockProcessor {
         }
     }
 
+    private void processMultiParagraphCommands(IBody container) {
+        List<XWPFParagraph> paragraphs = container.getParagraphs();
+        int i = 0;
+        while (i < paragraphs.size()) {
+            XWPFParagraph p = paragraphs.get(i);
+            String text = safeGetText(p);
+            Matcher startMatcher = DUPLICATE_AUTHORS_START_PATTERN.matcher(text);
+            if (startMatcher.find() && !text.contains("]}")) {
+                int startIdx = i;
+                int endIdx = findCommandEnd(paragraphs, i);
+                if (endIdx == -1) {
+                    i++;
+                    continue;
+                }
+                List<XWPFParagraph> commandParagraphs = new ArrayList<>(paragraphs.subList(startIdx, endIdx + 1));
+                processMultiParagraphCommandBlock(container, commandParagraphs);
+                // Обновляем список абзацев после удаления
+                paragraphs = container.getParagraphs();
+                i = startIdx;
+            } else {
+                i++;
+            }
+        }
+    }
+
+    private void processMultiParagraphCommandBlock(IBody container, List<XWPFParagraph> commandParagraphs) {
+        int copies = ViewModelStartScreen.selectedNumber; // Для DUPLICATE_AUTHORS
+        // Массивы для хранения текстов и соответствующих списков Run-стилей для каждого абзаца блока
+        List<String> templateTexts = new ArrayList<>();
+        List<List<RunStyle>> templateRunStyles = new ArrayList<>();
+        // Сохраняем параграфные стили до удаления
+        List<ParagraphStyle> paragraphStyles = new ArrayList<>();
+
+        // Первый абзац: отсекаем всё до символа '['
+        XWPFParagraph first = commandParagraphs.get(0);
+        String firstTextFull = safeGetText(first);
+        int openIdx = firstTextFull.indexOf('[');
+        String firstText = (openIdx >= 0 && openIdx < firstTextFull.length() - 1)
+                ? firstTextFull.substring(openIdx + 1)
+                : firstTextFull;
+        templateTexts.add(firstText);
+        // Извлекаем стили для первого абзаца: используем диапазон от openIdx+1 до конца исходного текста
+        int startPosFirst = (openIdx >= 0) ? openIdx + 1 : 0;
+        int endPosFirst = firstTextFull.length();
+        templateRunStyles.add(extractStyles(first, startPosFirst, endPosFirst));
+        paragraphStyles.add(new ParagraphStyle(first));
+
+        // Промежуточные абзацы: берём полностью
+        for (int i = 1; i < commandParagraphs.size() - 1; i++) {
+            XWPFParagraph p = commandParagraphs.get(i);
+            String t = safeGetText(p);
+            templateTexts.add(t);
+            templateRunStyles.add(extractStyles(p, 0, t.length()));
+            paragraphStyles.add(new ParagraphStyle(p));
+        }
+
+        // Последний абзац: отсекаем всё после "]}"
+        XWPFParagraph last = commandParagraphs.get(commandParagraphs.size() - 1);
+        String lastTextFull = safeGetText(last);
+        int closeIdx = lastTextFull.indexOf("]}");
+        String lastText = (closeIdx >= 0) ? lastTextFull.substring(0, closeIdx) : lastTextFull;
+        templateTexts.add(lastText);
+        templateRunStyles.add(extractStyles(last, 0, (closeIdx >= 0) ? closeIdx : lastTextFull.length()));
+        paragraphStyles.add(new ParagraphStyle(last));
+
+        // Определяем позицию для вставки нового блока (берем индекс первого абзаца блока)
+        int insertIdx = container.getParagraphs().indexOf(commandParagraphs.get(0));
+        // Удаляем оригинальные абзацы блока (в обратном порядке)
+        for (int j = commandParagraphs.size() - 1; j >= 0; j--) {
+            int idx = container.getParagraphs().indexOf(commandParagraphs.get(j));
+            if (idx != -1) {
+                removeParagraphFromContainer(container, idx);
+            }
+        }
+        // Вставляем копии блока: для каждого экземпляра копируем каждый абзац
+        for (int copy = 1; copy <= copies; copy++) {
+            for (int i = 0; i < templateTexts.size(); i++) {
+                XWPFParagraph newPara;
+                if (container instanceof XWPFDocument) {
+                    if (insertIdx < container.getParagraphs().size()) {
+                        XmlCursor cursor = container.getParagraphArray(insertIdx).getCTP().newCursor();
+                        newPara = container.insertNewParagraph(cursor);
+                        cursor.dispose();
+                    } else {
+                        newPara = ((XWPFDocument) container).createParagraph();
+                    }
+                    insertIdx++;
+                } else if (container instanceof XWPFTableCell) {
+                    newPara = ((XWPFTableCell) container).addParagraph();
+                } else {
+                    newPara = createParagraphInContainer(container);
+                }
+                // Применяем сохранённый стиль для текущего абзаца
+                ParagraphStyle ps = paragraphStyles.get(Math.min(i, paragraphStyles.size() - 1));
+                applyParagraphStyle(newPara, ps);
+                // Выполняем замену переменных для текущей копии
+                String replacedText = replaceXInVariables(templateTexts.get(i), copy);
+                insertStyledText(newPara, templateRunStyles.get(i), replacedText);
+            }
+        }
+    }
+
     private void processContainer(XWPFParagraph paragraph) {
-        String text = paragraph.getText();
+        String text = safeGetText(paragraph);
         Matcher matcher = DUPLICATE_ANY_PATTERN.matcher(text);
         if (!matcher.find()) return;
 
@@ -78,10 +189,14 @@ public class BlockProcessor {
 
         // Выбираем нужный метод дублирования по типу команды
         if (authorsBlock) {
-            if (MODE_SPACE.equals(mode)) {
-                processAuthorsBlockSpace(paragraph, copies, styles);
+            if (paragraph.getBody() instanceof XWPFTableCell && !MODE_SPACE.equals(mode)) {
+                processAuthorsBlockNewlineInTableCell(paragraph, copies, styles);
             } else {
-                processAuthorsBlockNewline(paragraph, copies, styles);
+                if (MODE_SPACE.equals(mode)) {
+                    processAuthorsBlockSpace(paragraph, copies, styles);
+                } else {
+                    processAuthorsBlockNewline(paragraph, copies, styles);
+                }
             }
         } else { // DUPLICATE
             if (MODE_SPACE.equals(mode)) {
@@ -89,6 +204,29 @@ public class BlockProcessor {
             } else {
                 insertDuplicatedContent(paragraph, copies, styles);
             }
+        }
+    }
+
+    // Метод для обработки команды DUPLICATE_AUTHORS в ячейках таблицы (newline режим)
+    private void processAuthorsBlockNewlineInTableCell(XWPFParagraph originalParagraph, int copies, List<RunStyle> styles) {
+        // Сохраняем стиль до удаления абзаца
+        ParagraphStyle ps = new ParagraphStyle(originalParagraph);
+
+        XWPFTableCell cell = (XWPFTableCell) originalParagraph.getBody();
+        List<XWPFParagraph> cellParagraphs = cell.getParagraphs();
+        int index = cellParagraphs.indexOf(originalParagraph);
+        // Удаляем исходный абзац с командой
+        removeParagraphFromContainer(cell, index);
+
+        // Вставляем новые абзацы в нужном порядке, используя сохранённый стиль
+        for (int i = 1; i <= copies; i++) {
+            CTP newCTP = cell.getCTTc().insertNewP(index);
+            XWPFParagraph newPara = new XWPFParagraph(newCTP, cell);
+            applyParagraphStyle(newPara, ps);
+            String fullText = buildFullText(styles);
+            String replacedText = replaceXInVariables(fullText, i);
+            insertStyledText(newPara, styles, replacedText);
+            index++;
         }
     }
 
@@ -107,7 +245,10 @@ public class BlockProcessor {
             cursor.toNextSibling(); // Перемещаемся за текущий параграф
             XWPFParagraph newPara = body.insertNewParagraph(cursor);
             cursor.dispose();
-            copyParagraphStyle(originalParagraph, newPara);
+
+            ParagraphStyle ps = new ParagraphStyle(originalParagraph);
+            applyParagraphStyle(newPara, ps);
+
             String replacedText = replaceXInVariables(fullText, i);
             insertStyledText(newPara, styles, replacedText);
             currentPara = newPara; // Обновляем текущий параграф для следующей итерации
@@ -136,7 +277,8 @@ public class BlockProcessor {
             XWPFParagraph currentParagraph = (i == 0) ? p : body.insertNewParagraph(p.getCTP().newCursor());
             // Копируем стиль из исходного абзаца
             if (i > 0) {
-                copyParagraphStyle(p, currentParagraph);
+                ParagraphStyle ps = new ParagraphStyle(p);
+                applyParagraphStyle(currentParagraph, ps);
             }
 
             // Вставляем текст с сохранением стилей для каждого Run
@@ -161,6 +303,42 @@ public class BlockProcessor {
                 newRun.setText(runStyle.text);
             }
         }
+    }
+
+    // Вспомогательный метод для удаления абзаца из контейнера (XWPFDocument или XWPFTableCell)
+    private void removeParagraphFromContainer(IBody container, int index) {
+        if (container instanceof XWPFDocument) {
+            ((XWPFDocument) container).removeBodyElement(index);
+        } else if (container instanceof XWPFTableCell) {
+            ((XWPFTableCell) container).removeParagraph(index);
+        }
+    }
+
+    // Вспомогательный метод для создания нового абзаца в контейнере
+    private XWPFParagraph createParagraphInContainer(IBody container) {
+        if (container instanceof XWPFDocument) {
+            return ((XWPFDocument) container).createParagraph();
+        } else if (container instanceof XWPFTableCell) {
+            return ((XWPFTableCell) container).addParagraph();
+        }
+        return null;
+    }
+
+    private String safeGetText(XWPFParagraph p) {
+        try {
+            return p.getText();
+        } catch (XmlValueDisconnectedException e) {
+            return "";
+        }
+    }
+
+    private int findCommandEnd(List<XWPFParagraph> paragraphs, int start) {
+        for (int i = start; i < paragraphs.size(); i++) {
+            if (safeGetText(paragraphs.get(i)).contains("]}")) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // Вставляет текст в абзац, распределяя его по Run-ам с сохранением стилей
@@ -235,17 +413,6 @@ public class BlockProcessor {
         }
     }
 
-    private void copyParagraphStyle(XWPFParagraph source, XWPFParagraph target) {
-        target.setAlignment(source.getAlignment());
-        target.setIndentationFirstLine(source.getIndentationFirstLine());
-        target.setIndentationLeft(source.getIndentationLeft());
-        target.setIndentationRight(source.getIndentationRight());
-        target.setSpacingBefore(source.getSpacingBefore());
-        target.setSpacingAfter(source.getSpacingAfter());
-        target.setSpacingBetween(source.getSpacingBetween());
-        target.setStyle(source.getStyle());
-    }
-
     private List<RunStyle> extractStyles(XWPFParagraph p, int start, int end) {
         List<RunStyle> styles = new ArrayList<>();
         XWPFDocument doc = p.getDocument();
@@ -290,16 +457,7 @@ public class BlockProcessor {
         return styles;
     }
 
-    private void applyStyle(XWPFRun run, RunStyle style) {
-        run.setBold(style.bold);
-        run.setItalic(style.italic);
-        run.setFontFamily(style.fontFamily);
-        run.setFontSize(style.fontSize);
-        run.setColor(style.color);
-        run.setUnderline(style.underline);
-        // Можно добавить другие свойства стиля по необходимости
-    }
-
+    // Дополнительный класс для хранения стиля Run-ов
     private class RunStyle {
         final String text;
         final boolean bold;
@@ -318,6 +476,61 @@ public class BlockProcessor {
             this.color = color;
             this.underline = underline;
         }
+    }
+
+    private void applyStyle(XWPFRun run, RunStyle style) {
+        run.setBold(style.bold);
+        run.setItalic(style.italic);
+        run.setFontFamily(style.fontFamily);
+        run.setFontSize(style.fontSize);
+        run.setColor(style.color);
+        run.setUnderline(style.underline);
+        // Можно добавить другие свойства стиля по необходимости
+    }
+
+    // Дополнительный класс для хранения стиля абзаца
+    private class ParagraphStyle {
+        ParagraphAlignment alignment;
+        int indentationFirstLine;
+        int indentationLeft;
+        int indentationRight;
+        int spacingBefore;
+        int spacingAfter;
+        int spacingBetween;
+        String styleId;
+
+        public ParagraphStyle(XWPFParagraph p) {
+            this.alignment = p.getAlignment();
+            this.indentationFirstLine = p.getIndentationFirstLine();
+            this.indentationLeft = p.getIndentationLeft();
+            this.indentationRight = p.getIndentationRight();
+            this.spacingBefore = p.getSpacingBefore();
+            this.spacingAfter = p.getSpacingAfter();
+            this.spacingBetween = (int) p.getSpacingBetween();
+            this.styleId = p.getStyle();
+        }
+    }
+
+    private void applyParagraphStyle(XWPFParagraph target, ParagraphStyle ps) {
+        // Сохраняем оригинальные настройки для таблиц
+        if (target.getBody() instanceof XWPFTableCell) {
+            target.setAlignment(ps.alignment);
+            target.setIndentationFirstLine(ps.indentationFirstLine);
+            target.setIndentationLeft(ps.indentationLeft);
+            target.setIndentationRight(ps.indentationRight);
+            target.setSpacingBefore(ps.spacingBefore);
+            target.setSpacingAfter(ps.spacingAfter);
+        } else {
+            // Стандартное применение стилей для обычных абзацев
+            target.setAlignment(ps.alignment);
+            target.setIndentationFirstLine(ps.indentationFirstLine);
+            target.setIndentationLeft(ps.indentationLeft);
+            target.setIndentationRight(ps.indentationRight);
+            target.setSpacingBefore(ps.spacingBefore);
+            target.setSpacingAfter(ps.spacingAfter);
+            target.setSpacingBetween(ps.spacingBetween);
+        }
+        target.setStyle(ps.styleId);
     }
 
     private void saveFile(String filePath, XWPFDocument doc) throws IOException {
