@@ -38,7 +38,8 @@ public class DocumentGenerator {
 
         // Конвертация в PDF, если включена опция convertToPdf
         if (isConvertToPdfSelected()) {
-            fileManager.convertAllWordDocumentsToPdf();
+            PdfConverter pdfConverter = new PdfConverter(fileManager.getOutputFolderPath());
+            pdfConverter.convertAllWordDocumentsToPdf();
         }
     }
 

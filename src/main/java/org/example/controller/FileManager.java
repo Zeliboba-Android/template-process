@@ -1,9 +1,5 @@
 package org.example.controller;
 
-import com.documents4j.api.DocumentType;
-import com.documents4j.api.IConverter;
-import com.documents4j.job.LocalConverter;
-
 import java.awt.*;
 import java.io.*;
 import java.net.URLDecoder;
@@ -27,43 +23,6 @@ public class FileManager {
 
     public void setOutputFolderPath(String outputFolderPath) {
         this.outputFolderPath = outputFolderPath;
-    }
-
-    // Метод для чтения всех Word документов и их конвертации в PDF
-    void convertAllWordDocumentsToPdf() {
-        File wordFolder = new File(outputFolderPath, "Word");
-        File pdfFolder = new File(outputFolderPath, "PDF");
-
-        createFolderIfNotExists(pdfFolder);
-        // Читаем файлы из папки Word
-        File[] wordFiles = wordFolder.listFiles((dir, name) -> name.endsWith(".docx"));
-
-        if (wordFiles != null) {
-            for (File wordFile : wordFiles) {
-                String pdfFileName = wordFile.getName().replace(".docx", ".pdf");
-                File pdfFile = new File(pdfFolder, pdfFileName);
-                convertDocxToPdf(wordFile.getAbsolutePath(), pdfFile.getAbsolutePath());
-            }
-        }
-    }
-
-    // Метод конвертации DOCX в PDF
-    private void convertDocxToPdf(String docPath, String pdfPath) {
-        IConverter converter = null;
-        try {
-            InputStream docxInputStream = new FileInputStream(docPath);
-            OutputStream outputStream = new FileOutputStream(pdfPath);
-            converter = LocalConverter.builder().build();
-            converter.convert(docxInputStream).as(DocumentType.DOCX).to(outputStream).as(DocumentType.PDF).execute();
-            outputStream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (converter != null) {
-                // Явно закрываем конвертер
-                converter.shutDown();
-            }
-        }
     }
 
     // Метод для создания папки сохранения
@@ -106,21 +65,29 @@ public class FileManager {
         // Проходим по всем выбранным файлам
         for (File file : selectedFiles) {
             // Если имя файла начинается с "block_", его нужно предварительно обработать
-            if (file.getName().startsWith("block_")) {
+            if (file.getName().startsWith("block_") && file.getName().endsWith(".docx")) {
                 try {
-                    // Формируем новый путь для файла без префикса "block_"
-                    // Например, "C:\Documents\block_example.docx" -> "C:\Documents\example.docx"
-                    String originalPath = file.getAbsolutePath();
-                    String newFilePath = originalPath.replace("block_", "");
+                    // Получаем родительскую директорию исходного файла
+                    String parentDir = file.getParent();
+                    // Формируем объект новой директории "block_files"
+                    File blockFilesDir = new File(parentDir, "block_files");
+                    // Если директория не существует, создаём её
+                    if (!blockFilesDir.exists()) {
+                        blockFilesDir.mkdirs();
+                    }
 
-                    // Создаём объект BlockProcessor для обработки данного файла
+                    // Удаляем префикс "block_" из имени файла
+                    String newFileName = file.getName().replace("block_", "");
+                    // Формируем новый путь файла в директории block_files
+                    File newFile = new File(blockFilesDir, newFileName);
+
+                    // Создаём объект BlockProcessor для обработки файла
                     BlockProcessor processor = new BlockProcessor(file);
-
-                    // сохраняет обновлённое содержимое в том же пути но с новым названием
-                    processor.processBlockFile(newFilePath);
+                    // Сохраняем обработанный файл по новому пути
+                    processor.processBlockFile(newFile.getAbsolutePath());
 
                     // Добавляем новый обработанный файл в список
-                    processedFiles.add(new File(newFilePath));
+                    processedFiles.add(newFile);
                 } catch (IOException exception) {
                     System.err.println("Ошибка обработки block-файла: " + file.getName());
                     exception.printStackTrace();
