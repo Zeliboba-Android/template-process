@@ -1,6 +1,5 @@
 package org.example.view;
 
-import org.example.controller.BlockProcessor;
 import org.example.controller.DocumentGenerator;
 import org.example.controller.FileManager;
 import org.example.main.Main;
@@ -12,7 +11,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

@@ -29,14 +29,14 @@ public class TagDatabase {
 
     private Path getPersistentDbPath() throws IOException, URISyntaxException {
         Path userHome = Paths.get(System.getProperty("user.home"));
-        Path appDir = userHome.resolve(".myapp");
+        Path appDir = userHome.resolve("DocCraft");
 
-        // Выводим путь к папке .myapp
-        System.out.println("Путь к папке .myapp: " + appDir);
+        // Выводим путь к папке DocCraft
+        System.out.println("Путь к папке DocCraft: " + appDir);
 
-        // Проверяем, существует ли папка .myapp
+        // Проверяем, существует ли папка DocCraft
         if (!Files.exists(appDir)) {
-            System.out.println("Папка .myapp не существует. Будет создана.");
+            System.out.println("Папка DocCraft не существует. Будет создана.");
         }
 
         // Создаём директорию, если её нет
