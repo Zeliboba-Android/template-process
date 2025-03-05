@@ -15,7 +15,6 @@ import java.io.File;
 
 public class ViewModelStartScreen extends JPanel {
     private Main main;
-    private DocumentGenerator documentGenerator;
     private FileManager fileManager;
     private TagExtractor tagExtractor;
     public ViewModelTextFields viewModelTextFields;
@@ -42,7 +41,6 @@ public class ViewModelStartScreen extends JPanel {
 
     public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator, FileManager fileManager) {
         this.main = main;
-        this.documentGenerator = documentGenerator;
         this.fileManager = fileManager;
         this.tagExtractor = new TagExtractor();
         viewModelTextFields = new ViewModelTextFields(main,this, documentGenerator, viewModelTable,fileManager, tagExtractor);

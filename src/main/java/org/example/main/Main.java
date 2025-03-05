@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Main {
-    public JFrame frame;
-    public ViewModelStartScreen viewModelStartScreen;
+    private JFrame frame;
+    private ViewModelStartScreen viewModelStartScreen;
     private DocumentGenerator documentGenerator;
     private FileManager fileManager;
     private JPanel mainPanel; // Панель, которая будет использовать CardLayout
@@ -27,7 +27,7 @@ public class Main {
         generateFrame();
     }
 
-    public void generateFrame() {
+    private void generateFrame() {
         frame = new JFrame("Генерация документов"); // Создаем главное окно
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
         frame.setMinimumSize(new Dimension(1200, 700));

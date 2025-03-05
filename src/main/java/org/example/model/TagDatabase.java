@@ -6,10 +6,6 @@ import java.nio.file.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.JarOutputStream;
 
 public class TagDatabase {
     private final Path dbPath;

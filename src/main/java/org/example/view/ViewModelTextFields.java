@@ -42,7 +42,6 @@ public class ViewModelTextFields extends JPanel {
     private TagMap tagMap;
     private final Map<String, JTextField> specificFields = new HashMap<>();
     private boolean isEditMode = false;
-    private JButton saveButton;
     private FileManager fileManager;
 
     ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable, FileManager fileManager, TagExtractor tagExtractor) {
