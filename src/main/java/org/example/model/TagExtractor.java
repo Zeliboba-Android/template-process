@@ -39,8 +39,9 @@ public class TagExtractor {
                         while (matcher.find()) {
                             String tag = matcher.group();
                             if (!uniqueTags.contains(tag)) {
-                                String value = tagDatabase.getPlaceholder(tag);
-                                writer.println(value + ";"+tag + ";1");
+                                String placeholder = tagDatabase.getPlaceholder(tag);
+                                String placeholder_Long = placeholder; // Пока дублируем placeholder
+                                writer.println(tag + ";" + placeholder + ";" + placeholder_Long + ";1");
                                 uniqueTags.add(tag);
                             }
                         }
@@ -55,7 +56,6 @@ public class TagExtractor {
             e.printStackTrace();
         }
     }
-
     private Set<String> writeTagsToSet(File[] files) {
         Set<String> uniqueTags = new HashSet<>();
         Pattern pattern = Pattern.compile(regex);
@@ -124,28 +124,24 @@ public class TagExtractor {
                     additionTags.add(tag);
                 }
             }
-            // Для каждого автора от 1 до countAuthors заменяем число после "key_ria_author"
             for (int i = 1; i <= countAuthors; i++) {
                 for (String tag : additionTags) {
-                    // Используем replaceAll с группой, чтобы заменить только часть, например:
-                    // "key_ria_author1_lastname" → "key_ria_author2_lastname" для i=2
                     String authorTag = tag.replaceAll("(key_ria_author)1", "$1" + i);
                     if (!uniqueTags.contains(authorTag)) {
                         uniqueTags.add(authorTag);
 
-                        // Добавляем новый authorTag в fileTagMap
                         for (Map.Entry<String, List<String>> entry : fileTagMap.entrySet()) {
                             List<String> tagsList = entry.getValue();
                             if (!tagsList.contains(authorTag)) {
                                 tagsList.add(authorTag);
                             }
                         }
-                        // Работа с базой данных: получаем значение из базы данных или добавляем новый тег
-                        String placeholder = tagDatabase.getPlaceholder(authorTag);
 
-                        // Запись в CSV, если это требуется
+                        String placeholder = tagDatabase.getPlaceholder(authorTag);
+                        String placeholder_Long = placeholder; // Пока дублируем placeholder
+
                         if (useCSV && writer != null) {
-                            writer.println(placeholder + ";" + authorTag + ";1");
+                            writer.println(authorTag + ";" + placeholder + ";" + placeholder_Long + ";1");
                         }
                         System.out.println(authorTag);
                     }
@@ -204,20 +200,19 @@ public class TagExtractor {
     // Загрузка данных из CSV файла
     public List<TagMap> readTableFile(String csvFilePath) {
         List<TagMap> tagMaps = new ArrayList<>();
-        try (// Укажите правильную кодировку вашего файла CSV
-             BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFilePath),"cp1251"));
-        ) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFilePath), "cp1251"))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(";");
-                if (parts.length > 2) {
-                    String tag = parts[1].trim(); // Тег
-                    for (int i = 2; i < parts.length; i++) { // Начинаем со столбца данных
-                        if (tagMaps.size() < i - 1) {
+                if (parts.length > 3) { // Проверяем, что есть минимум 4 колонки
+                    String tag = parts[0].trim(); // Тег теперь в первой колонке (индекс 0)
+                    // Начинаем обработку данных с 4-й колонки (индекс 3)
+                    for (int i = 3; i < parts.length; i++) {
+                        if (tagMaps.size() < i - 2) {
                             tagMaps.add(new TagMap()); // Инициализируем Map для нового столбца
                         }
                         String value = parts[i].trim();
-                        tagMaps.get(i - 2).addTag(tag, value); // Добавляем значение в соответствующий Map
+                        tagMaps.get(i - 3).addTag(tag, value); // Добавляем значение в соответствующий Map
                     }
                 }
             }
@@ -226,6 +221,8 @@ public class TagExtractor {
         }
         return tagMaps;
     }
+
+
 
     public Set<String> getUniqueTags() {
         return uniqueTags;

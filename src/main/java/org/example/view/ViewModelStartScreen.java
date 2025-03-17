@@ -43,7 +43,7 @@ public class ViewModelStartScreen extends JPanel {
         this.main = main;
         this.fileManager = fileManager;
         this.tagExtractor = new TagExtractor();
-        viewModelTextFields = new ViewModelTextFields(main,this, documentGenerator, viewModelTable,fileManager, tagExtractor);
+        viewModelTextFields = new ViewModelTextFields(main,this, documentGenerator, fileManager, tagExtractor);
         viewModelTable = new ViewModelTable(main,this, documentGenerator, fileManager, tagExtractor);
 
         initializeStartScreen();

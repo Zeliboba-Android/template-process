@@ -33,7 +33,7 @@ public class ViewModelTextFields extends JPanel {
     private JPanel textFieldPanel;
     private JScrollPane scrollPane;
     private JScrollPane scrollPaneButton;
-    private ViewModelTable viewModelTable;
+    private JPopupMenu popupMenu = new JPopupMenu();
     private JPanel buttonPanel;
     private HashMap<String, List<String>> fileTagMap;
     private Map<String, String> tagValuesMap; // Map to store tag values
@@ -43,12 +43,12 @@ public class ViewModelTextFields extends JPanel {
     private final Map<String, JTextField> specificFields = new HashMap<>();
     private boolean isEditMode = false;
     private FileManager fileManager;
+    Window window = SwingUtilities.getWindowAncestor(this);
 
-    ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, ViewModelTable viewModelTable, FileManager fileManager, TagExtractor tagExtractor) {
+    ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, FileManager fileManager, TagExtractor tagExtractor) {
         this.main = main;
         this.viewModelStartScreen = viewModelStartScreen;
         this.documentGenerator = documentGenerator;
-        this.viewModelTable = viewModelTable;
         this.tagDatabase = new TagDatabase();
         this.fileManager = fileManager;
         this.tagExtractor = tagExtractor;
@@ -146,7 +146,7 @@ public class ViewModelTextFields extends JPanel {
 
     private void adjustScrollPaneSizes() {
         // Получаем родительский контейнер (окно)
-        Window window = SwingUtilities.getWindowAncestor(this);
+        window = SwingUtilities.getWindowAncestor(this);
 
         if (window != null) {
             int windowWidth = window.getWidth();
@@ -175,6 +175,7 @@ public class ViewModelTextFields extends JPanel {
 
             chooseFileButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, buttonY, buttonWidth, buttonHeight);
             clearButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4 + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight);
+            popupMenu.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, buttonY, buttonWidth, buttonHeight);
 
             chooseFileLabel.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, scrollPaneHeight / 6, buttonWidth, buttonHeight);
             generateButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, scrollPaneHeight + scrollPaneHeight / 3 - 20, buttonWidth, buttonHeight);
@@ -614,7 +615,14 @@ public class ViewModelTextFields extends JPanel {
 
         textField.putClientProperty("placeholder", placeholder);
         textField.putClientProperty("tag", tag); // Сохраняем оригинальный тег
-
+        textField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e) && !isEditMode) {
+                    showPopupMenu(textField, e);
+                }
+            }
+        });
         // Обработчики фокуса
         textField.addFocusListener(new FocusAdapter() {
             @Override
@@ -657,7 +665,32 @@ public class ViewModelTextFields extends JPanel {
             });
         }
     }
+    private void showPopupMenu(JTextField textField, MouseEvent e) {
+        popupMenu.removeAll();
+        popupMenu.setBackground(new Color(240, 240, 240));
 
+        // Устанавливаем размер popupMenu равным размеру кнопки chooseFileButton
+        Dimension buttonSize = chooseFileButton.getSize();
+        popupMenu.setPreferredSize(new Dimension(buttonSize.width+buttonSize.width/2, buttonSize.height));
+
+        String tag = (String) textField.getClientProperty("tag");
+        String placeholder = tagDatabase.getPlaceholder(tag);
+
+        String hintText = (placeholder == null || placeholder.isEmpty())
+                ? "Дополнительная подсказка отсутствует"
+                : "Пример: " + placeholder;
+
+        JMenuItem menuItem = new JMenuItem(hintText);
+        menuItem.setFont(new Font("Arial", Font.PLAIN, 12));
+        menuItem.setBackground(new Color(255, 255, 225));
+        popupMenu.add(menuItem);
+
+        // Позиционируем popupMenu слева от chooseFileButton
+        int x = -popupMenu.getPreferredSize().width-20; // Смещение влево на ширину меню
+        int y = 0; // Выравнивание по верхнему краю кнопки
+
+        popupMenu.show(chooseFileButton, x, y);
+    }
     private void handleSpecialTagInput(String changedTag, JTextField changedField) {
         String input = changedField.getText().trim();
 
