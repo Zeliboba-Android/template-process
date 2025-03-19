@@ -44,7 +44,13 @@ public class TagExtractor {
                                 if (placeholder_Long == null){
                                     placeholder_Long = placeholder;
                                 }
-                                writer.println(tag + ";" + placeholder + ";" + placeholder_Long + ";1");
+
+                                // Обработка длинной подсказки для CSV
+                                placeholder_Long = placeholder_Long.replace("\n", " ").replace("\r", " "); // Убираем переносы строк
+                                        placeholder_Long = placeholder_Long.replace("\"", "\"\""); // Экранируем кавычки
+
+                                // Записываем строку в CSV, заключая длинную подсказку в кавычки
+                                writer.println(tag + ";" + placeholder + ";\"" + placeholder_Long + "\";1");
                                 uniqueTags.add(tag);
                             }
                         }
