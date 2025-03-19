@@ -20,7 +20,7 @@ public class TagExtractor {
     private final String regex = "\\$\\{[^}]+\\}";
     private Pattern pattern;
     private Set<String> uniqueTags = new HashSet<>();
-    private HashMap<String, List<String>> fileTagMap = new HashMap<>();
+    private HashMap<String, List<String>> fileTagMap = new HashMap<>();// это не тег мап
 
     public TagExtractor() {
         this.pattern = Pattern.compile(regex);

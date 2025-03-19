@@ -17,6 +17,7 @@ public class Main {
     public static DocumentGenerator documentGenerator;
     public static FileManager fileManager;
     public static TagDatabase tagDatabase;
+    public static TagExtractor tagExtractor;
     private JPanel mainPanel;
     private CardLayout cardLayout;
     private Map<String, JPanel> panelMap;
@@ -31,6 +32,7 @@ public class Main {
         panelMap = new HashMap<>();
         cardLayout = new CardLayout();
         tagDatabase = new TagDatabase();
+        tagExtractor = new TagExtractor();
 
         // Регистрация начальной панели
         panelMap.put(PANEL_START_SCREEN, viewModelStartScreen);

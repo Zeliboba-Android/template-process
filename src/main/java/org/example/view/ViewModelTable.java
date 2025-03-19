@@ -20,7 +20,6 @@ import static org.example.main.Main.*;
 
 public class ViewModelTable extends JPanel {
     private Main main;
-    private TagExtractor tagExtractor;
     public JButton generateButtonUsingTable;
     private JButton buttonBackSpace;
     public JButton createCSVButton;
@@ -35,10 +34,8 @@ public class ViewModelTable extends JPanel {
     private File[] selectedFiles;
     private String csvFilePath;
 
-    ViewModelTable(Main main,
-                    TagExtractor tagExtractor) {
+    ViewModelTable(Main main) {
         this.main = main;
-        this.tagExtractor = tagExtractor;
 
         ViewStyles.stylePanel(this);
         setLayout(new BorderLayout()); // Используем BorderLayout для основного компонента

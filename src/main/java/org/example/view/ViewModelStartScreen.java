@@ -13,7 +13,6 @@ import static org.example.main.Main.fileManager;
 
 public class ViewModelStartScreen extends JPanel {
     private Main main;
-    private TagExtractor tagExtractor;
     public ViewModelTextFields viewModelTextFields;
     public ViewModelTable viewModelTable;
     private JLabel labelChoosingGenerateMethod;
@@ -37,9 +36,8 @@ public class ViewModelStartScreen extends JPanel {
 
     public ViewModelStartScreen(Main main) {
         this.main = main;
-        this.tagExtractor = new TagExtractor();
-        viewModelTextFields = new ViewModelTextFields(main, tagExtractor);
-        viewModelTable = new ViewModelTable(main, tagExtractor);
+        viewModelTextFields = new ViewModelTextFields(main);
+        viewModelTable = new ViewModelTable(main);
 
         initializeStartScreen();
     }

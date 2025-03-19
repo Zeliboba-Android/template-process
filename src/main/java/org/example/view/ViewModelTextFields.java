@@ -20,7 +20,6 @@ import static org.example.main.Main.*;
 
 public class ViewModelTextFields extends JPanel {
     private Main main;
-    private TagExtractor tagExtractor;
     private JButton generateButton;
     public JButton buttonBackSpace;
     public JButton chooseFileButton;
@@ -35,18 +34,17 @@ public class ViewModelTextFields extends JPanel {
     private JPopupMenu popupMenu = new JPopupMenu();
     private JPanel buttonPanel;
     private HashMap<String, List<String>> fileTagMap;
-    private Map<String, String> tagValuesMap;
+    private TagMap tagValuesMap; /// Используется для сохранения введёных в окна ввода значений
     private File[] selectedFiles;
     private boolean isEditMode = false;
     Window window = SwingUtilities.getWindowAncestor(this);
 
-    ViewModelTextFields(Main main, TagExtractor tagExtractor) {
+    ViewModelTextFields(Main main) {
         this.main = main;
-        this.tagExtractor = tagExtractor;
         ViewStyles.stylePanel(this);
         setLayout(null);
         setFocusable(true);
-        tagValuesMap = new HashMap<>();
+        tagValuesMap = new TagMap();
         initializeUI();
         setupMode();
         clearAll();
