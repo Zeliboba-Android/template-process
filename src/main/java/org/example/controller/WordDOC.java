@@ -47,7 +47,7 @@ public class WordDOC {
     private HWPFDocument replaceText(HWPFDocument doc){
         // диапазон, охватывающий весь текст документа
         Range range = doc.getRange();
-        for(HashMap.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
+        for(HashMap.Entry<String, String> entry: tagMap.entrySet()) {
             // получение ключа
             String tag = entry.getKey();
             // получение значения

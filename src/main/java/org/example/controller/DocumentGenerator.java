@@ -18,7 +18,6 @@ public class DocumentGenerator {
 
     public DocumentGenerator(FileManager fileManager) {
         this.fileManager = fileManager;
-        copyTagMap = new TagMap();
     }
 
     public void generateDocument(TagMap tagMap, File[] selectedFiles) {
@@ -44,7 +43,7 @@ public class DocumentGenerator {
     }
 
     private void workWithSpecialFiles(List<File> filesToProcess, TagMap tagMap, int countAuthors) {
-        copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
+        copyTagMap = tagMap.copyTagMap();
         Authors additionalAuthors = new Authors(countAuthors);
         SharedTagProcessor sharedTagProcessor = new SharedTagProcessor();
         sharedTagProcessor.fillAuthorsTags(copyTagMap, additionalAuthors);
@@ -69,14 +68,14 @@ public class DocumentGenerator {
     }
 
     private void processMainFile(File file, String fileName, Authors additionalAuthors) {
-        TagMap combinedTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+        TagMap combinedTagMap = copyTagMap.copyTagMap();
         combinedTagMap.combineTags(additionalAuthors.getMainTagMap());
         replaceText(file, combinedTagMap, fileName.replace("main_", "1_"));
     }
 
     private void processAdditionalFile(File file, String fileName, Authors additionalAuthors) {
         for (int i = 1; i < additionalAuthors.getTagMaps().size(); i += 3) {
-            TagMap additionalTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+            TagMap additionalTagMap = copyTagMap.copyTagMap();
             StringBuilder authorNumbers = new StringBuilder();
             for (int j = 0; j < 3; j++) {
                 if (i + j < additionalAuthors.getTagMaps().size()) {
@@ -89,14 +88,14 @@ public class DocumentGenerator {
     }
 
     private void processMultiFile(File file, TagMap tagMap, int countAuthors, String fileName) {
-        copyTagMap = new TagMap(new HashMap<>(tagMap.getTagMap()));
+        copyTagMap = tagMap.copyTagMap();
         // Разбиваем теги по типу "key_ria_authorX..." для каждого автора
         Authors multiAuthors = new Authors(countAuthors);
         MultiTagProcessor multiTagProcessor = new MultiTagProcessor();
         multiTagProcessor.fillAuthorsTags(copyTagMap, multiAuthors);
         // Обрабатываем файлы, которые должны генерироваться для каждых авторов
         for (int i = 0; i < countAuthors; i++) {
-            TagMap multiTagMap = new TagMap(new HashMap<>(copyTagMap.getTagMap()));
+            TagMap multiTagMap = copyTagMap.copyTagMap();
             multiTagMap.combineTags(multiAuthors.getTagMapByIndex(i));
             replaceText(file, multiTagMap, fileName.replace("multi_", (i + 1) + "_"));
         }
@@ -115,8 +114,7 @@ public class DocumentGenerator {
                     WordDOC wordDOC = new WordDOC(tags, file);
                     wordDOC.changeFile(newFilePath);
                 } else if (fileName.endsWith(".docx")) {
-                    WordDOCX wordDOCX = new WordDOCX(tags, file);
-                    wordDOCX.changeFile(newFilePath);
+                    WordDOCX.createFile(tags, file, newFilePath);
                 } else
                     System.out.println("Файл " + fileName + " не формата doc/docx");
             } else {
@@ -133,7 +131,7 @@ public class DocumentGenerator {
     // а если значение есть, то возвращает false
     private boolean checkForEmptyValues(TagMap tagMap) {
         boolean hasEmptyValues = false;
-        for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
+        for (Map.Entry<String, String> entry : tagMap.entrySet()) {
             String value = entry.getValue();
             if (value == null || value.isEmpty()) {
                 // Обработка пустого значения

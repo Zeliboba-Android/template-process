@@ -20,7 +20,7 @@ public class Authors {
     // Метод для получения тегов первого автора (основной TagMap)
     public TagMap getMainTagMap() {
         if (tagAuthors == null || tagAuthors.isEmpty()) {
-            return new TagMap(new HashMap<>());
+            return new TagMap();
         }
         return tagAuthors.get(0);
     }
@@ -28,7 +28,7 @@ public class Authors {
     // Метод для получения тегов автора по индексу
     public TagMap getTagMapByIndex(int index) {
         if (tagAuthors == null || tagAuthors.size() <= index) {
-            return new TagMap(new HashMap<>());
+            return new TagMap();
         }
         return tagAuthors.get(index);
     }

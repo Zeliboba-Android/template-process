@@ -16,7 +16,11 @@ public class WordDOCX {
     private final TagMap tagMap;
     private File file;
 
-    WordDOCX(TagMap tagMap, File file) {
+    public static void createFile(TagMap tagMap, File file, String newFilePath)  {
+        WordDOCX doc = new WordDOCX(tagMap, file);
+        doc.changeFile(newFilePath);
+    }
+    private WordDOCX(TagMap tagMap, File file) {
         this.tagMap = tagMap;
         this.file = file;
     }
@@ -25,7 +29,7 @@ public class WordDOCX {
      * Метод changeFile() выполняет замену текста в документе и сохранение изменений.
      * @throws IOException если возникают проблемы при чтении или записи файла.
      */
-    void changeFile(String newFilePath) throws IOException {
+    private void changeFile(String newFilePath)  {
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
         try (InputStream inputStream = new FileInputStream(file)){
             // создание объект для работы с .docx
@@ -34,6 +38,8 @@ public class WordDOCX {
             doc = replaceText(doc);
             saveFile(newFilePath, doc);
             doc.close();
+        } catch (IOException e) {
+            System.err.println("Ошибка при изменении файла " + newFilePath);
         }
     }
 
@@ -180,7 +186,7 @@ public class WordDOCX {
      */
     private boolean checkTag(String runText){
         // проходит по каждой записи в словаре тегов и проверяет их наличие в тексте
-        for(HashMap.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
+        for(HashMap.Entry<String, String> entry: tagMap.entrySet()) {
             String tag = entry.getKey();
             if (runText.contains(tag))
                 return true;
@@ -213,7 +219,7 @@ public class WordDOCX {
      */
     private void replaceWord(XWPFRun run, StringBuilder text){
         String runText = String.valueOf(text);
-        for(HashMap.Entry<String, String> entry: tagMap.getTagMap().entrySet()) {
+        for(HashMap.Entry<String, String> entry: tagMap.entrySet()) {
             // получение ключа
             String tag = entry.getKey();
             // получение значения

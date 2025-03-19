@@ -268,7 +268,7 @@ public class ViewModelTable extends JPanel {
             int countZeros = 0;
             Map<String, String> specificTags = new HashMap<>();
 
-            for (Map.Entry<String, String> entry : tagMap.getTagMap().entrySet()) {
+            for (Map.Entry<String, String> entry : tagMap.entrySet()) {
                 String tag = entry.getKey();
                 String value = entry.getValue();
 

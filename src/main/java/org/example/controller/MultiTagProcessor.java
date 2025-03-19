@@ -23,8 +23,7 @@ public class MultiTagProcessor implements TagProcessor {
         if (authors == null || authors.getTagMaps().isEmpty()) {
             return;
         }
-        Map<String, String> tagMapCopy = new HashMap<>(originalTagMap.getTagMap());
-        for (Map.Entry<String, String> entry : tagMapCopy.entrySet()) {
+        for (Map.Entry<String, String> entry : originalTagMap.copyTagMap().entrySet()) {
             String tag = entry.getKey();
             // Если тег содержит "key_ria_author" и содержит цифры (например, key_ria_author1_lastname)
             if (tag.contains("key_ria_author") && tag.matches(".*\\d+.*")) {

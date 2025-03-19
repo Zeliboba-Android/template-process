@@ -20,8 +20,7 @@ public class SharedTagProcessor implements TagProcessor {
         if (authors == null || authors.getTagMaps().isEmpty()) {
             return;
         }
-        Map<String, String> tagMapCopy = new HashMap<>(originalTagMap.getTagMap());
-        for (Map.Entry<String, String> entry : tagMapCopy.entrySet()) {
+        for (Map.Entry<String, String> entry : originalTagMap.copyTagMap().entrySet()) {
             String tag = entry.getKey();
             String newTag = tag;
             // Проверяем, что тег содержит "key_ria_author" и цифры
