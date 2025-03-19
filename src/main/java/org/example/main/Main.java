@@ -2,6 +2,8 @@ package org.example.main;
 
 import org.example.controller.DocumentGenerator;
 import org.example.controller.FileManager;
+import org.example.model.TagDatabase;
+import org.example.model.TagExtractor;
 import org.example.view.ViewModelStartScreen;
 
 import javax.swing.*;
@@ -11,45 +13,58 @@ import java.util.Map;
 
 public class Main {
     private JFrame frame;
-    private ViewModelStartScreen viewModelStartScreen;
-    private DocumentGenerator documentGenerator;
-    private FileManager fileManager;
-    private JPanel mainPanel; // Панель, которая будет использовать CardLayout
-    private CardLayout cardLayout; // Менеджер компоновки для переключения панелей
-    private Map<String, JPanel> panelMap; // Карта для хранения панелей по их именам
+    public static ViewModelStartScreen viewModelStartScreen;
+    public static DocumentGenerator documentGenerator;
+    public static FileManager fileManager;
+    public static TagDatabase tagDatabase;
+    private JPanel mainPanel;
+    private CardLayout cardLayout;
+    private Map<String, JPanel> panelMap;
+    public static final String PANEL_START_SCREEN = "startScreen";
+    public static final String PANEL_TEXT_FIELDS = "textFields";
+    public static final String PANEL_TABLE = "table";
 
     private Main() {
         fileManager = new FileManager();
         documentGenerator = new DocumentGenerator(fileManager);
-        viewModelStartScreen = new ViewModelStartScreen(this, documentGenerator, fileManager);
-        panelMap = new HashMap<>(); // Инициализация карты для хранения панелей
-        cardLayout = new CardLayout(); // Инициализация CardLayout
+        viewModelStartScreen = new ViewModelStartScreen(this);
+        panelMap = new HashMap<>();
+        cardLayout = new CardLayout();
+        tagDatabase = new TagDatabase();
+
+        // Регистрация начальной панели
+        panelMap.put(PANEL_START_SCREEN, viewModelStartScreen);
+        panelMap.put(PANEL_TEXT_FIELDS, viewModelStartScreen.viewModelTextFields);
+        panelMap.put(PANEL_TABLE, viewModelStartScreen.viewModelTable);
+
         generateFrame();
     }
 
     private void generateFrame() {
-        frame = new JFrame("Генерация документов"); // Создаем главное окно
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Устанавливаем операцию закрытия
+        frame = new JFrame("Генерация документов");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setMinimumSize(new Dimension(1200, 700));
-        frame.setSize(1200, 750); // Устанавливаем начальный размер окна
+        frame.setSize(1200, 750);
 
-        // Создаем панель с CardLayout и добавляем в неё начальный экран
         mainPanel = new JPanel(cardLayout);
-        mainPanel.add(viewModelStartScreen, "startScreen");
-        frame.getContentPane().add(mainPanel); // Добавляем mainPanel в контейнер главного окна
+        // Добавление всех зарегистрированных панелей
+        for (Map.Entry<String, JPanel> entry : panelMap.entrySet()) {
+            mainPanel.add(entry.getValue(), entry.getKey());
+        }
+
+        frame.getContentPane().add(mainPanel);
         frame.setLocationRelativeTo(null);
-        frame.setVisible(true); // Делаем окно видимым
+        frame.setVisible(true);
+        cardLayout.show(mainPanel, PANEL_START_SCREEN);
     }
 
-    // Функция для переключения панелей
-    public void switchToPanel(JPanel newPanel) {
-        String panelName = newPanel.getClass().getSimpleName(); // Используем имя класса в качестве ключа
-
-        if (!panelMap.containsKey(panelName)) {
-            panelMap.put(panelName, newPanel); // Если панель ещё не добавлена, добавляем её в карту и mainPanel
-            mainPanel.add(newPanel, panelName);
+    // Переключение панелей по строковому ключу
+    public void switchToPanel(String panelName) {
+        if (panelMap.containsKey(panelName)) {
+            cardLayout.show(mainPanel, panelName);
+        } else {
+            System.err.println("Панель '" + panelName + "' не найдена.");
         }
-        cardLayout.show(mainPanel, panelName); // Переключаемся на нужную панель
     }
 
     public static void main(String[] args) {

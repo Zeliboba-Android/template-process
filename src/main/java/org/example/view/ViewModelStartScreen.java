@@ -1,7 +1,5 @@
 package org.example.view;
 
-import org.example.controller.DocumentGenerator;
-import org.example.controller.FileManager;
 import org.example.main.Main;
 import org.example.model.TagExtractor;
 
@@ -9,13 +7,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
 import java.io.File;
+import static org.example.main.Main.fileManager;
 
 
 public class ViewModelStartScreen extends JPanel {
     private Main main;
-    private FileManager fileManager;
     private TagExtractor tagExtractor;
     public ViewModelTextFields viewModelTextFields;
     public ViewModelTable viewModelTable;
@@ -26,7 +23,6 @@ public class ViewModelStartScreen extends JPanel {
     private JButton buttonEditPlaceholders;
     public JComboBox<Integer> authorComboBox;
     private JLabel universityLabel;
-    public static BufferedImage logo;
     public boolean verification;
     public static int selectedNumber = 1;
     private JCheckBox convertToPdfCheckBox;
@@ -39,12 +35,11 @@ public class ViewModelStartScreen extends JPanel {
     private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
     private static final Dimension LABEL_SIZE = new Dimension((int)(250 * 1.4), (int)(50 * 1.4)); // Размер надписи
 
-    public ViewModelStartScreen(Main main, DocumentGenerator documentGenerator, FileManager fileManager) {
+    public ViewModelStartScreen(Main main) {
         this.main = main;
-        this.fileManager = fileManager;
         this.tagExtractor = new TagExtractor();
-        viewModelTextFields = new ViewModelTextFields(main,this, documentGenerator, fileManager, tagExtractor);
-        viewModelTable = new ViewModelTable(main,this, documentGenerator, fileManager, tagExtractor);
+        viewModelTextFields = new ViewModelTextFields(main, tagExtractor);
+        viewModelTable = new ViewModelTable(main, tagExtractor);
 
         initializeStartScreen();
     }
@@ -158,7 +153,7 @@ public class ViewModelStartScreen extends JPanel {
         add(buttonGenerateWithTextFields, gbc);
         buttonGenerateWithTextFields.addActionListener(e -> {
             viewModelTextFields.setEditMode(false); // Явный сброс режима
-            main.switchToPanel(viewModelTextFields);
+            main.switchToPanel(Main.PANEL_TEXT_FIELDS);
             verification = true;
         });
 
@@ -172,7 +167,7 @@ public class ViewModelStartScreen extends JPanel {
         buttonGenerateWithTable.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                main.switchToPanel(viewModelTable);
+                main.switchToPanel(Main.PANEL_TABLE);
                 verification = false;
             }
         });
@@ -183,7 +178,7 @@ public class ViewModelStartScreen extends JPanel {
         add(buttonEditPlaceholders, gbc);
         buttonEditPlaceholders.addActionListener(e -> {
             viewModelTextFields.setEditMode(true);
-            main.switchToPanel(viewModelTextFields);
+            main.switchToPanel(Main.PANEL_TEXT_FIELDS);
         });
     }
 

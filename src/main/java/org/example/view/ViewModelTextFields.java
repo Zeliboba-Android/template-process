@@ -1,9 +1,6 @@
 package org.example.view;
 
-import org.example.controller.DocumentGenerator;
-import org.example.controller.FileManager;
 import org.example.main.Main;
-import org.example.model.TagDatabase;
 import org.example.model.TagExtractor;
 import org.example.model.TagMap;
 
@@ -19,9 +16,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.example.main.Main.*;
+
 public class ViewModelTextFields extends JPanel {
     private Main main;
-    private DocumentGenerator documentGenerator;
     private TagExtractor tagExtractor;
     private JButton generateButton;
     public JButton buttonBackSpace;
@@ -31,28 +29,19 @@ public class ViewModelTextFields extends JPanel {
     private JButton editLongPlaceholdersButton;
     private boolean isEditingLongPlaceholders = false;
     private JLabel chooseFileLabel;
-    private ViewModelStartScreen viewModelStartScreen;
     private JPanel textFieldPanel;
     private JScrollPane scrollPane;
     private JScrollPane scrollPaneButton;
     private JPopupMenu popupMenu = new JPopupMenu();
     private JPanel buttonPanel;
     private HashMap<String, List<String>> fileTagMap;
-    private Map<String, String> tagValuesMap; // Map to store tag values
-    private TagDatabase tagDatabase; // Database instance
+    private Map<String, String> tagValuesMap;
     private File[] selectedFiles;
-    private TagMap tagMap;
-    private final Map<String, JTextField> specificFields = new HashMap<>();
     private boolean isEditMode = false;
-    private FileManager fileManager;
     Window window = SwingUtilities.getWindowAncestor(this);
 
-    ViewModelTextFields(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator, FileManager fileManager, TagExtractor tagExtractor) {
+    ViewModelTextFields(Main main, TagExtractor tagExtractor) {
         this.main = main;
-        this.viewModelStartScreen = viewModelStartScreen;
-        this.documentGenerator = documentGenerator;
-        this.tagDatabase = new TagDatabase();
-        this.fileManager = fileManager;
         this.tagExtractor = tagExtractor;
         ViewStyles.stylePanel(this);
         setLayout(null);
@@ -92,53 +81,6 @@ public class ViewModelTextFields extends JPanel {
             loadAllLongPlaceholdersFromDatabase();
         }
 
-    }
-    private void generateTextFieldsForLongPlaceholders() {
-        List<String> tags = tagDatabase.getAllTags();
-        textFieldPanel.removeAll();
-
-        for (String tag : tags) {
-            JTextField textField = new JTextField();
-            setupTextFieldForLongEditMode(textField, tag);
-            textFieldPanel.add(textField);
-            ViewStyles.styleTextField(textField);
-        }
-
-        adjustTextFieldSizes();
-        textFieldPanel.revalidate();
-        textFieldPanel.repaint();
-    }
-    private void setupTextFieldForLongEditMode(JTextField textField, String tag) {
-        String currentPlaceholderLong = tagDatabase.getPlaceholderLong(tag);
-
-        if (currentPlaceholderLong == null || currentPlaceholderLong.isEmpty()) {
-            textField.setText("Введите длинную подсказку для " + tag);
-            textField.setForeground(Color.GRAY);
-        } else {
-            textField.setText(currentPlaceholderLong);
-            textField.setForeground(Color.BLACK);
-        }
-
-        textField.putClientProperty("originalTag", tag);
-
-        textField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (textField.getForeground() == Color.GRAY) {
-                    textField.setText("");
-                    textField.setForeground(Color.BLACK);
-                }
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                String input = textField.getText().trim();
-                if (input.isEmpty()) {
-                    textField.setText("Введите длинную подсказку для " + tag);
-                    textField.setForeground(Color.GRAY);
-                }
-            }
-        });
     }
 
 
@@ -345,12 +287,13 @@ public class ViewModelTextFields extends JPanel {
                         // Если находимся в обычном режиме редактирования,
                         // выходим на стартовый экран
                         clearAll();
-                        main.switchToPanel(viewModelStartScreen);
+                        main.switchToPanel(PANEL_START_SCREEN);
                     }
                 } else {
                     // Если не в режиме редактирования, просто выходим на стартовый экран
-                    main.switchToPanel(viewModelStartScreen);
+                    main.switchToPanel(PANEL_START_SCREEN);
                 }
+
             }
         });
         add(buttonBackSpace);
@@ -557,13 +500,6 @@ public class ViewModelTextFields extends JPanel {
         return true;
     }
 
-    private String extractTagFromTextField(JTextField textField) {
-        String placeholder = (String) textField.getClientProperty("placeholder");
-        if (placeholder != null) {
-            return placeholder.substring(placeholder.indexOf("(") + 1, placeholder.indexOf(")"));
-        }
-        return null;
-    }
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -594,9 +530,6 @@ public class ViewModelTextFields extends JPanel {
         for (int i = 0; i < tags.size(); i++) {
             String tag = tags.get(i);
             JTextField textField = new JTextField();
-            if (SPECIAL_TAGS.contains(tag)) {
-                specificFields.put(tag, textField);
-            }
             textFields.add(textField); // Добавляем поле в список
 
             final int currentIndex = i; // Фиксируем индекс для лямбда-выражения
@@ -1057,21 +990,21 @@ public class ViewModelTextFields extends JPanel {
     }
 
     // Функция заполнения значений тегов
-    private void fillTags() {
-        tagMap = new TagMap();
+    private TagMap fillTags() {
+        TagMap tagMap = new TagMap();
         for (JTextField textField : findTextFields()) {
             String tag = (String) textField.getClientProperty("tag");
             String value = textField.getForeground() == Color.GRAY ? "" : textField.getText().trim();
             tagMap.addTag(tag, value);
         }
+        return  tagMap;
     }
 
     private void fillTagsAndCallGeneration() {
         if (!checkSpecialTags()) return;
 
         fileManager.createFolder();
-        fillTags();
-        documentGenerator.generateDocument(tagMap, selectedFiles);
+        documentGenerator.generateDocument(fillTags(), selectedFiles);
         fileManager.openFileOrFolder(fileManager.getOutputFolderPath());
     }
 

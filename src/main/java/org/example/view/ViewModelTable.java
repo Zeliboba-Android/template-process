@@ -16,11 +16,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.example.main.Main.*;
+
 public class ViewModelTable extends JPanel {
     private Main main;
-    private ViewModelStartScreen viewModelStartScreen;
-    private DocumentGenerator documentGenerator;
-    private FileManager fileManager;
     private TagExtractor tagExtractor;
     public JButton generateButtonUsingTable;
     private JButton buttonBackSpace;
@@ -36,12 +35,9 @@ public class ViewModelTable extends JPanel {
     private File[] selectedFiles;
     private String csvFilePath;
 
-    ViewModelTable(Main main, ViewModelStartScreen viewModelStartScreen, DocumentGenerator documentGenerator,
-                   FileManager fileManager, TagExtractor tagExtractor) {
-        this.viewModelStartScreen = viewModelStartScreen;
-        this.documentGenerator = documentGenerator;
+    ViewModelTable(Main main,
+                    TagExtractor tagExtractor) {
         this.main = main;
-        this.fileManager = fileManager;
         this.tagExtractor = tagExtractor;
 
         ViewStyles.stylePanel(this);
@@ -62,7 +58,7 @@ public class ViewModelTable extends JPanel {
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                main.switchToPanel(viewModelStartScreen);
+                main.switchToPanel(PANEL_START_SCREEN);
             }
         });
         buttonPanel.add(buttonBackSpace);

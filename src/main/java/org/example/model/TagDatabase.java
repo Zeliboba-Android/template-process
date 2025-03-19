@@ -200,21 +200,6 @@ public class TagDatabase {
         return tags;
     }
 
-    public String getTagByPlaceholder(String placeholder) {
-        String sql = "SELECT tag FROM tags WHERE placeholder = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, placeholder);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("tag");
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Ошибка при поиске тега по подсказке", e);
-        }
-        return null;
-    }
-
     public void close() {
         try {
             if (connection != null && !connection.isClosed()) {

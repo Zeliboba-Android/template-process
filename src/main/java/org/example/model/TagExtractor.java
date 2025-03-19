@@ -11,6 +11,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.example.main.Main.tagDatabase;
+
 /**
  * @author Денис on 20.05.2024
  */
@@ -19,11 +21,9 @@ public class TagExtractor {
     private Pattern pattern;
     private Set<String> uniqueTags = new HashSet<>();
     private HashMap<String, List<String>> fileTagMap = new HashMap<>();
-    private TagDatabase tagDatabase;
 
     public TagExtractor() {
         this.pattern = Pattern.compile(regex);
-        this.tagDatabase = new TagDatabase();
     }
 
     public void writeTagsToCSV(File[] Files, String csvFilePath) {
@@ -229,11 +229,5 @@ public class TagExtractor {
             e.printStackTrace();
         }
         return tagMaps;
-    }
-
-
-
-    public Set<String> getUniqueTags() {
-        return uniqueTags;
     }
 }
