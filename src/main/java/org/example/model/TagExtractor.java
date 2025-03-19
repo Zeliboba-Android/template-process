@@ -40,7 +40,10 @@ public class TagExtractor {
                             String tag = matcher.group();
                             if (!uniqueTags.contains(tag)) {
                                 String placeholder = tagDatabase.getPlaceholder(tag);
-                                String placeholder_Long = placeholder; // Пока дублируем placeholder
+                                String placeholder_Long = tagDatabase.getPlaceholderLong(tag);
+                                if (placeholder_Long == null){
+                                    placeholder_Long = placeholder;
+                                }
                                 writer.println(tag + ";" + placeholder + ";" + placeholder_Long + ";1");
                                 uniqueTags.add(tag);
                             }

@@ -28,6 +28,8 @@ public class ViewModelTextFields extends JPanel {
     public JButton chooseFileButton;
     private JButton showAllTagsButton;
     private JButton clearButton;
+    private JButton editLongPlaceholdersButton;
+    private boolean isEditingLongPlaceholders = false;
     private JLabel chooseFileLabel;
     private ViewModelStartScreen viewModelStartScreen;
     private JPanel textFieldPanel;
@@ -70,17 +72,87 @@ public class ViewModelTextFields extends JPanel {
 
     private void setupMode() {
         System.out.println(isEditMode);
+        editLongPlaceholdersButton.setVisible(isEditMode);
+
         if (isEditMode) {
             enterEditMode();
         } else {
             exitEditMode();
         }
+
+        // Сброс состояния длинных подсказок при переключении режимов
     }
+    private void enterLongPlaceholdersEditMode() {
+        isEditingLongPlaceholders = true;
+
+        // Если есть выбранные файлы - показываем их теги, иначе все из БД
+        if (fileTagMap != null && !fileTagMap.isEmpty()) {
+            loadLongPlaceholdersForTags(getAllTags(fileTagMap));
+        } else {
+            loadAllLongPlaceholdersFromDatabase();
+        }
+
+    }
+    private void generateTextFieldsForLongPlaceholders() {
+        List<String> tags = tagDatabase.getAllTags();
+        textFieldPanel.removeAll();
+
+        for (String tag : tags) {
+            JTextField textField = new JTextField();
+            setupTextFieldForLongEditMode(textField, tag);
+            textFieldPanel.add(textField);
+            ViewStyles.styleTextField(textField);
+        }
+
+        adjustTextFieldSizes();
+        textFieldPanel.revalidate();
+        textFieldPanel.repaint();
+    }
+    private void setupTextFieldForLongEditMode(JTextField textField, String tag) {
+        String currentPlaceholderLong = tagDatabase.getPlaceholderLong(tag);
+
+        if (currentPlaceholderLong == null || currentPlaceholderLong.isEmpty()) {
+            textField.setText("Введите длинную подсказку для " + tag);
+            textField.setForeground(Color.GRAY);
+        } else {
+            textField.setText(currentPlaceholderLong);
+            textField.setForeground(Color.BLACK);
+        }
+
+        textField.putClientProperty("originalTag", tag);
+
+        textField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getForeground() == Color.GRAY) {
+                    textField.setText("");
+                    textField.setForeground(Color.BLACK);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                String input = textField.getText().trim();
+                if (input.isEmpty()) {
+                    textField.setText("Введите длинную подсказку для " + tag);
+                    textField.setForeground(Color.GRAY);
+                }
+            }
+        });
+    }
+
 
     private void enterEditMode() {
         generateButton.setVisible(false);
         clearButton.setText("Сохранить в БД");
-
+        isEditingLongPlaceholders = false;
+        fileTagMap = null;
+        // Принудительная перезагрузка полей
+        if (fileTagMap != null && !fileTagMap.isEmpty()) {
+            generateTextFields(getAllTags(fileTagMap));
+        } else {
+            loadAllTagsFromDatabase();
+        }
         // Удаляем все старые обработчики кнопки
         for (ActionListener al : chooseFileButton.getActionListeners()) {
             chooseFileButton.removeActionListener(al);
@@ -121,13 +193,18 @@ public class ViewModelTextFields extends JPanel {
             }
             adjustScrollPaneSizes();
             generateFileButtons(fileTagMap);
-            generateTextFields(getAllTags(fileTagMap)); // Заменяем loadAllTagsFromDatabase()
+            if (isEditingLongPlaceholders) {
+                loadLongPlaceholdersForTags(getAllTags(fileTagMap));
+            } else {
+                generateTextFields(getAllTags(fileTagMap));
+            }
         }
     }
 
     private void exitEditMode() {
         generateButton.setVisible(true);
         clearButton.setText("Очистить ввод");
+        isEditingLongPlaceholders = false;
 
         // Удаляем все старые обработчики кнопки
         for (ActionListener al : chooseFileButton.getActionListeners()) {
@@ -174,6 +251,7 @@ public class ViewModelTextFields extends JPanel {
             int buttonSpacing = 20; // Фиксированное расстояние между кнопками
 
             chooseFileButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, buttonY, buttonWidth, buttonHeight);
+            editLongPlaceholdersButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 2 - scrollPaneButtonX / 7 ,buttonY,buttonWidth,buttonHeight);
             clearButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4 + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight);
             popupMenu.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, buttonY, buttonWidth, buttonHeight);
 
@@ -258,9 +336,21 @@ public class ViewModelTextFields extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (isEditMode) {
-                    clearAll();
+                    if (isEditingLongPlaceholders) {
+                        // Если находимся в режиме редактирования длинных подсказок,
+                        // просто возвращаемся в обычный режим редактирования
+                        isEditingLongPlaceholders = false;
+                        setupMode();
+                    } else {
+                        // Если находимся в обычном режиме редактирования,
+                        // выходим на стартовый экран
+                        clearAll();
+                        main.switchToPanel(viewModelStartScreen);
+                    }
+                } else {
+                    // Если не в режиме редактирования, просто выходим на стартовый экран
+                    main.switchToPanel(viewModelStartScreen);
                 }
-                main.switchToPanel(viewModelStartScreen);
             }
         });
         add(buttonBackSpace);
@@ -331,6 +421,13 @@ public class ViewModelTextFields extends JPanel {
         scrollPaneButton.getVerticalScrollBar().setUnitIncrement(16);
         ViewStyles.styleScrollBar(scrollPaneButton.getVerticalScrollBar());
         add(scrollPaneButton);
+
+        editLongPlaceholdersButton = new JButton("Длинные подсказки");
+        ViewStyles.styleButton(editLongPlaceholdersButton);
+        editLongPlaceholdersButton.setBounds(300, 80, 200, 50);
+        editLongPlaceholdersButton.setVisible(false);
+        editLongPlaceholdersButton.addActionListener(e -> enterLongPlaceholdersEditMode());
+        add(editLongPlaceholdersButton);
     }
 
     private void handleNormalModelFileSelection() {
@@ -410,18 +507,41 @@ public class ViewModelTextFields extends JPanel {
     }
 
     private void savePlaceholdersToDatabase() {
+        if (isEditingLongPlaceholders) {
+            saveLongPlaceholders();
+        } else {
+            saveRegularPlaceholders();
+        }
+    }
+    private void saveLongPlaceholders() {
+        for (JTextField textField : findTextFields()) {
+            String tag = (String) textField.getClientProperty("originalTag");
+            if (tag == null) continue;
+
+            String placeholderLong = textField.getText().trim();
+            if (textField.getForeground() == Color.GRAY &&
+                    placeholderLong.equals("Введите длинную подсказку для " + tag)) {
+                placeholderLong = "";
+            }
+
+            String currentPlaceholder = tagDatabase.getPlaceholder(tag);
+            tagDatabase.saveTagWithLongPlaceholder(tag, currentPlaceholder, placeholderLong);
+        }
+        JOptionPane.showMessageDialog(this, "Длинные подсказки сохранены в БД");
+    }
+
+    private void saveRegularPlaceholders() {
         for (JTextField textField : findTextFields()) {
             String tag = (String) textField.getClientProperty("originalTag");
             if (tag == null) continue;
 
             String placeholder = textField.getText().trim();
-            // Проверяем, является ли текст подсказкой
-            if (textField.getForeground() == Color.GRAY && placeholder.equals("Введите подсказку для " + tag)) {
-                placeholder = ""; // Сохраняем пустую строку
-            }
-            tagDatabase.saveTag(tag, placeholder);
+            String placeholderLong = tagDatabase.getPlaceholderLong(tag); // Получаем текущую длинную подсказку
+
+            // Сохраняем ОБЕ подсказки
+            tagDatabase.saveTagWithLongPlaceholder(tag, placeholder, placeholderLong);
         }
-        JOptionPane.showMessageDialog(this, "Все подсказки сохранены в БД");
+        JOptionPane.showMessageDialog(this, "Подсказки сохранены в БД");
     }
 
     private boolean isTagRelevant(String tag, int selectedAuthors) {
@@ -666,29 +786,90 @@ public class ViewModelTextFields extends JPanel {
         }
     }
     private void showPopupMenu(JTextField textField, MouseEvent e) {
+        // Очищаем предыдущие элементы меню
         popupMenu.removeAll();
         popupMenu.setBackground(new Color(240, 240, 240));
 
-        // Устанавливаем размер popupMenu равным размеру кнопки chooseFileButton
-        Dimension buttonSize = chooseFileButton.getSize();
-        popupMenu.setPreferredSize(new Dimension(buttonSize.width+buttonSize.width/2, buttonSize.height));
-
+        // Получаем тег и подсказки из базы данных
         String tag = (String) textField.getClientProperty("tag");
         String placeholder = tagDatabase.getPlaceholder(tag);
+        String placeholderLong = tagDatabase.getPlaceholderLong(tag);
 
-        String hintText = (placeholder == null || placeholder.isEmpty())
+        // Формируем текст подсказки
+        String hintText = (placeholderLong == null || placeholderLong.isEmpty())
+                ? (placeholder == null || placeholder.isEmpty()
                 ? "Дополнительная подсказка отсутствует"
-                : "Пример: " + placeholder;
+                : "Пример: " + placeholder)
+                : "Пример: " + placeholderLong;
 
-        JMenuItem menuItem = new JMenuItem(hintText);
-        menuItem.setFont(new Font("Arial", Font.PLAIN, 12));
-        menuItem.setBackground(new Color(255, 255, 225));
+        // Создаем JTextArea для отображения текста с переносом
+        JTextArea textArea = new JTextArea(hintText);
+        textArea.setWrapStyleWord(true); // Перенос по словам
+        textArea.setLineWrap(true); // Включаем перенос строк
+        textArea.setEditable(false); // Запрещаем редактирование
+        textArea.setBackground(new Color(255, 255, 225)); // Цвет фона
+        textArea.setFont(new Font("Arial", Font.PLAIN, 12)); // Шрифт
+        textArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Отступы
+
+        // Рассчитываем размеры текста
+        FontMetrics metrics = textArea.getFontMetrics(textArea.getFont());
+        int windowWidth = window.getWidth(); // Ширина окна
+        int maxWidth = (int) (windowWidth * 0.25); // 25% от ширины окна
+        int lineHeight = metrics.getHeight(); // Высота одной строки
+
+        // Разбиваем текст на строки
+        List<String> lines = new ArrayList<>();
+        StringBuilder currentLine = new StringBuilder();
+        for (String word : hintText.split(" ")) {
+            if (metrics.stringWidth(currentLine.toString() + word) > maxWidth) {
+                lines.add(currentLine.toString());
+                currentLine = new StringBuilder();
+            }
+            currentLine.append(word).append(" ");
+        }
+        lines.add(currentLine.toString());
+
+        // Рассчитываем предпочтительную высоту
+        int lineCount = lines.size();
+        int preferredHeight = lineCount * lineHeight + 10; // + padding
+
+        // Устанавливаем максимальную высоту
+        int MAX_POPUP_HEIGHT = (int) (window.getHeight() * 0.5); // 50% от высоты окна
+        if (preferredHeight > MAX_POPUP_HEIGHT) {
+            preferredHeight = MAX_POPUP_HEIGHT;
+        }
+
+        // Создаем JScrollPane для текста
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(maxWidth + 20, preferredHeight+40));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder()); // Убираем лишние рамки
+
+        // Настраиваем полосу прокрутки
+        if (preferredHeight >= MAX_POPUP_HEIGHT) {
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        } else {
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        }
+        JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+        verticalScrollBar.setUnitIncrement(10); // Скорость прокрутки
+        ViewStyles.styleScrollBar(verticalScrollBar); // Стилизация полосы прокрутки
+
+        // Создаем JMenuItem и добавляем в него JScrollPane
+        JMenuItem menuItem = new JMenuItem();
+        menuItem.setLayout(new BorderLayout());
+        menuItem.add(scrollPane, BorderLayout.CENTER);
         popupMenu.add(menuItem);
 
-        // Позиционируем popupMenu слева от chooseFileButton
-        int x = -popupMenu.getPreferredSize().width-20; // Смещение влево на ширину меню
-        int y = 0; // Выравнивание по верхнему краю кнопки
+        // Настраиваем размеры и отображение popupMenu
+        popupMenu.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        popupMenu.setPopupSize(
+                scrollPane.getPreferredSize().width + 20,
+                Math.min(preferredHeight + 20, MAX_POPUP_HEIGHT)
+        );
 
+        // Позиционируем popupMenu
+        int x = -popupMenu.getPreferredSize().width - 20; // Смещение влево
+        int y = 0; // Выравнивание по верхнему краю
         popupMenu.show(chooseFileButton, x, y);
     }
     private void handleSpecialTagInput(String changedTag, JTextField changedField) {
@@ -766,11 +947,18 @@ public class ViewModelTextFields extends JPanel {
         // Модифицированный обработчик для кнопки "Показать все теги"
         showAllTagsButton.addActionListener(e -> {
             if (isEditMode) {
-                loadAllTagsFromDatabase();
+                if (isEditingLongPlaceholders) {
+                    // Режим редактирования длинных подсказок: загружаем ВСЕ длинные подсказки из БД
+                    loadAllLongPlaceholdersFromDatabase();
+                } else {
+                    // Обычный режим редактирования: загружаем все обычные подсказки
+                    loadAllTagsFromDatabase();
+                }
             } else {
+                // Режим генерации: показываем теги из выбранных файлов
                 generateTextFields(getAllTags(fileTagMap));
             }
-            chooseFileLabel.setText("Выбранный файл: " + showAllTagsButton.getText());
+            chooseFileLabel.setText("Режим просмотра: Все теги");
         });
 
         if (selectedFiles.length != 0)
@@ -786,7 +974,15 @@ public class ViewModelTextFields extends JPanel {
             fileButton.addActionListener(e -> {
                 chooseFileLabel.setText("Выбранный файл: " + fileName);
                 List<String> tags = fileTagMap.get(fileName);
-                generateTextFields(tags);
+
+                if (isEditMode && isEditingLongPlaceholders) {
+                    // Режим редактирования длинных подсказок:
+                    // Показываем длинные подсказки для тегов этого файла
+                    loadLongPlaceholdersForTags(tags);
+                } else {
+                    // Стандартное отображение подсказок
+                    generateTextFields(tags);
+                }
             });
             buttonPanel.add(fileButton);
             buttonPanel.add(Box.createVerticalStrut(10));
@@ -794,6 +990,36 @@ public class ViewModelTextFields extends JPanel {
 
         buttonPanel.revalidate();
         buttonPanel.repaint();
+    }
+    private void loadAllLongPlaceholdersFromDatabase() {
+        List<String> allTags = tagDatabase.getAllTags();
+        generateLongPlaceholdersFields(allTags);
+    }
+
+    private void loadLongPlaceholdersForTags(List<String> tags) {
+        generateLongPlaceholdersFields(tags);
+    }
+
+    private void generateLongPlaceholdersFields(List<String> tags) {
+        textFieldPanel.removeAll();
+
+        for (String tag : tags) {
+            JTextField textField = new JTextField();
+            String longPlaceholder = tagDatabase.getPlaceholderLong(tag);
+
+            // Настройка поля для редактирования длинной подсказки
+            textField.putClientProperty("originalTag", tag);
+            textField.setText(longPlaceholder != null ? longPlaceholder : "");
+            textField.setToolTipText("Длинная подсказка для тега: " + tag);
+
+            // Стилизация и добавление на панель
+            ViewStyles.styleTextField(textField);
+            textFieldPanel.add(textField);
+        }
+
+        adjustTextFieldSizes();
+        textFieldPanel.revalidate();
+        textFieldPanel.repaint();
     }
 
     private void clearTextFields() {

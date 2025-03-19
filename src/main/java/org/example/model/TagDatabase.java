@@ -91,21 +91,66 @@ public class TagDatabase {
     private void createNewDatabase(Path dbFile) throws IOException {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbFile.toString());
              Statement stmt = conn.createStatement()) {
-            stmt.execute("CREATE TABLE tags (tag TEXT PRIMARY KEY, placeholder TEXT NOT NULL)");
+            stmt.execute("CREATE TABLE tags (" +
+                    "tag TEXT PRIMARY KEY, " +
+                    "placeholder TEXT NOT NULL, " +
+                    "placeholder_long TEXT)");
         } catch (SQLException e) {
             throw new IOException("Не удалось создать новую базу данных", e);
         }
     }
 
     private void initializeDatabase() {
-        // Создаём таблицу, если она не существует
         try (Statement stmt = connection.createStatement()) {
+            // Создаём таблицу, если она не существует
             stmt.execute("CREATE TABLE IF NOT EXISTS tags (" +
                     "tag TEXT PRIMARY KEY, " +
-                    "placeholder TEXT NOT NULL)");
+                    "placeholder TEXT NOT NULL, " +
+                    "placeholder_long TEXT)");
+
+            // Проверяем, существует ли столбец placeholder_long
+            boolean columnExists = false;
+            try (ResultSet rs = connection.getMetaData().getColumns(null, null, "tags", "placeholder_long")) {
+                if (rs.next()) {
+                    columnExists = true;
+                }
+            }
+
+            // Если столбец отсутствует, добавляем его
+            if (!columnExists) {
+                stmt.execute("ALTER TABLE tags ADD COLUMN placeholder_long TEXT");
+                System.out.println("Столбец placeholder_long добавлен в таблицу tags.");
+            }
         } catch (SQLException e) {
-            throw new RuntimeException("Ошибка при создании таблицы", e);
+            throw new RuntimeException("Ошибка при создании или изменении таблицы", e);
         }
+    }
+    public void saveTagWithLongPlaceholder(String tag, String placeholder, String placeholderLong) {
+        String sql = "INSERT OR REPLACE INTO tags(tag, placeholder, placeholder_long) VALUES(?, ?, ?)";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, tag);
+            pstmt.setString(2, placeholder);
+            pstmt.setString(3, placeholderLong);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при сохранении тега с длинной подсказкой", e);
+        }
+    }
+
+    public String getPlaceholderLong(String tag) {
+        String sql = "SELECT placeholder_long FROM tags WHERE tag = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, tag);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("placeholder_long");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка при получении длинной подсказки", e);
+        }
+        return null; // Если значение не найдено
     }
 
     public void saveTag(String tag, String placeholder) {
