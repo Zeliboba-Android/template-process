@@ -20,7 +20,7 @@ public abstract class WordProcessor <T>{
     /**
      * Реализация изменения файла.
      */
-    abstract void changeFile(String newFilePath) throws IOException;
+    protected abstract void changeFile(String newFilePath) throws IOException;
 
     /**
      * Выполняет замену текста в документе.
