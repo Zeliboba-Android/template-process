@@ -103,27 +103,20 @@ public class DocumentGenerator {
 
     private void replaceText(File file, TagMap tags, String authorPrefix) {
         String fileName = file.getName();
-        try {
-            // Проверка наличия пустых значений в TagMap
-            boolean hasEmptyValues = checkForEmptyValues(tags);
-            if (!hasEmptyValues) {
-                String newFolderPath = fileManager.getOutputFolderPath() + File.separator + "Word";
-                fileManager.createFolderIfNotExists(new File(newFolderPath));
-                String newFilePath = newFolderPath + File.separator + authorPrefix;
-                if (fileName.endsWith(".doc")) {
-                    WordDOC wordDOC = new WordDOC(tags, file);
-                    wordDOC.changeFile(newFilePath);
-                } else if (fileName.endsWith(".docx")) {
-                    WordDOCX.createFile(tags, file, newFilePath);
-                } else
-                    System.out.println("Файл " + fileName + " не формата doc/docx");
-            } else {
-                System.out.println("Не удалось изменить файл" + fileName + ".Обнаружены пустые значения.");
-            }
-        } catch (IOException e) {
-            // обработка исключения в случае возникновения ошибки при изменении файла
-            System.err.println("Ошибка при изменении файла " + fileName);
-            throw new RuntimeException(e);
+        // Проверка наличия пустых значений в TagMap
+        boolean hasEmptyValues = checkForEmptyValues(tags);
+        if (!hasEmptyValues) {
+            String newFolderPath = fileManager.getOutputFolderPath() + File.separator + "Word";
+            fileManager.createFolderIfNotExists(new File(newFolderPath));
+            String newFilePath = newFolderPath + File.separator + authorPrefix;
+            if (fileName.endsWith(".doc")) {
+                WordDOC.createFile(tags, file, newFilePath);
+            } else if (fileName.endsWith(".docx")) {
+                WordDOCX.createFile(tags, file, newFilePath);
+            } else
+                System.out.println("Файл " + fileName + " не формата doc/docx");
+        } else {
+            System.out.println("Не удалось изменить файл" + fileName + ".Обнаружены пустые значения.");
         }
     }
 

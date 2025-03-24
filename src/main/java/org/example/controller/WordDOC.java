@@ -13,19 +13,27 @@ import java.util.HashMap;
  * Он позволяет заменить определенные текстовые метки в документе на указанные значения.
  * Для работы с документом используются библиотека Apache POI и объект POIFSFileSystem.
  */
-public class WordDOC {
-    private final TagMap tagMap;
-    private File file;
+public class WordDOC extends WordProcessor<HWPFDocument>{
     WordDOC(TagMap tagMap, File file){
-        this.tagMap = tagMap;
-        this.file = file;
+        super(tagMap, file);
     }
+
+    public static void createFile(TagMap tagMap, File file, String newFilePath) {
+        WordDOC doc = new WordDOC(tagMap, file);
+        try {
+            doc.changeFile(newFilePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Ошибка при изменении файла " + newFilePath, e);
+        }
+    }
+
     /**
      * Метод changeFile() извлекает документ test.doc из ресурсов класспути,
      * заменяет определенные текстовые метки в документе и сохраняет изменения.
      * @throws IOException если возникает ошибка ввода-вывода при чтении или записи файла
      */
-    void changeFile(String newFilePath) throws IOException{
+    @Override
+    protected void changeFile(String newFilePath) throws IOException {
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
         // POIFSFileSystem - объект для работы с документом Word
         try (InputStream inputStream = new FileInputStream(file);
@@ -44,7 +52,8 @@ public class WordDOC {
      * @param doc объект HWPFDocument, представляющий документ типа .doc
      * @return объект HWPFDocument с замененным текстом
      */
-    private HWPFDocument replaceText(HWPFDocument doc){
+    @Override
+    protected HWPFDocument replaceText(HWPFDocument doc){
         // диапазон, охватывающий весь текст документа
         Range range = doc.getRange();
         for(HashMap.Entry<String, String> entry: tagMap.entrySet()) {
@@ -64,7 +73,8 @@ public class WordDOC {
      * @param doc объект HWPFDocument, содержащий измененное содержимое документа
      * @throws IOException если возникает ошибка ввода-вывода при записи файла
      */
-    private void saveFile(String filePath, HWPFDocument doc) throws IOException {
+    @Override
+    protected void saveFile(String filePath, HWPFDocument doc) throws IOException {
         try (FileOutputStream out = new FileOutputStream(filePath)) {
             // записывание содержимого документа в файл, который был открыт для записи
             doc.write(out);

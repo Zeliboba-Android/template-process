@@ -12,24 +12,26 @@ import java.util.HashMap;
  * Он позволяет заменить определенные текстовые метки в документе на указанные значения.
  * Для работы с документом используются библиотеки Apache POI.
  */
-public class WordDOCX {
-    private final TagMap tagMap;
-    private File file;
+public class WordDOCX extends WordProcessor<XWPFDocument> {
+    private WordDOCX(TagMap tagMap, File file) {
+        super(tagMap, file);
+    }
 
     public static void createFile(TagMap tagMap, File file, String newFilePath)  {
         WordDOCX doc = new WordDOCX(tagMap, file);
-        doc.changeFile(newFilePath);
-    }
-    private WordDOCX(TagMap tagMap, File file) {
-        this.tagMap = tagMap;
-        this.file = file;
+        try {
+            doc.changeFile(newFilePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Ошибка при изменении файла " + newFilePath, e);
+        }
     }
 
     /**
      * Метод changeFile() выполняет замену текста в документе и сохранение изменений.
      * @throws IOException если возникают проблемы при чтении или записи файла.
      */
-    private void changeFile(String newFilePath)  {
+    @Override
+    protected void changeFile(String newFilePath) throws IOException {
         // inputStream - входной поток данных, FileInputStream - чтения байтов из файла
         try (InputStream inputStream = new FileInputStream(file)){
             // создание объект для работы с .docx
@@ -38,8 +40,6 @@ public class WordDOCX {
             doc = replaceText(doc);
             saveFile(newFilePath, doc);
             doc.close();
-        } catch (IOException e) {
-            System.err.println("Ошибка при изменении файла " + newFilePath);
         }
     }
 
@@ -48,7 +48,8 @@ public class WordDOCX {
      * @param doc объект XWPFDocument, представляющий документ, в котором нужно выполнить замену.
      * @return XWPFDocument с выполненной заменой.
      */
-    private XWPFDocument replaceText(XWPFDocument doc) {
+    @Override
+    protected XWPFDocument replaceText(XWPFDocument doc) {
         // обработка всех абзацев в документе
         iterationAllParagraphs(doc.getParagraphs());
         // при наличии таблиц
@@ -268,7 +269,8 @@ public class WordDOCX {
      * @param doc объект XWPFDocument, содержащий измененное содержимое документа
      * @throws IOException если возникает ошибка ввода-вывода при записи файла
      */
-    private void saveFile(String filePath, XWPFDocument doc) throws IOException {
+    @Override
+    protected void saveFile(String filePath, XWPFDocument doc) throws IOException {
         try (FileOutputStream out = new FileOutputStream(filePath)) {
             // записывание содержимого документа в файл, который был открыт для записи
             doc.write(out);
