@@ -1,7 +1,6 @@
 package org.example.view;
 
 import org.example.main.Main;
-import org.example.model.TagExtractor;
 import org.example.model.TagMap;
 
 import javax.swing.*;
@@ -10,8 +9,8 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -37,6 +36,9 @@ public class ViewModelTextFields extends JPanel {
     private TagMap tagValuesMap; /// Используется для сохранения введёных в окна ввода значений
     private File[] selectedFiles;
     private boolean isEditMode = false;
+    private JTextArea expandingTextArea;
+    private JScrollPane expandingScrollPane;
+    private JTextField currentExpandedTextField;
     Window window = SwingUtilities.getWindowAncestor(this);
 
     ViewModelTextFields(Main main) {
@@ -67,7 +69,7 @@ public class ViewModelTextFields extends JPanel {
             exitEditMode();
         }
 
-        // Сброс состояния длинных подсказок при переключении режимов
+        adjustScrollPaneSizes();
     }
     private void enterLongPlaceholdersEditMode() {
         isEditingLongPlaceholders = true;
@@ -78,6 +80,7 @@ public class ViewModelTextFields extends JPanel {
         } else {
             loadAllLongPlaceholdersFromDatabase();
         }
+        adjustScrollPaneSizes();
 
     }
 
@@ -180,11 +183,27 @@ public class ViewModelTextFields extends JPanel {
 
             // Установим размеры для scrollPaneButton с учетом отступов
             int scrollPaneButtonX = ((windowWidth / 2 + 50) + marginLeft / 2);
-            scrollPaneButton.setBounds(scrollPaneButtonX, marginTop, scrollPaneWidth - scrollPaneWidth / 7, scrollPaneHeight);
+            int scrollPaneButtonHeight = isEditingLongPlaceholders ? scrollPaneHeight / 2 : scrollPaneHeight;
+            scrollPaneButton.setBounds(scrollPaneButtonX, marginTop, scrollPaneWidth - scrollPaneWidth / 7, scrollPaneButtonHeight);
 
             // Изменение размеров кнопок и текстовых полей относительно размеров панели
             int buttonWidth = (int) ((scrollPaneButton.getWidth() / 3) * 1.6);
             int buttonHeight = scrollPaneButton.getHeight() / 10;
+            if (isEditingLongPlaceholders ) {
+                buttonHeight = scrollPaneButton.getHeight() * 2 / 10;
+            }
+            if (expandingScrollPane != null && expandingScrollPane.isVisible() && currentExpandedTextField != null) {
+                Point buttonLocation = scrollPaneButton.getLocation();
+                int x = buttonLocation.x;
+                int y = buttonLocation.y + scrollPaneButton.getHeight() + 10;
+                // Устанавливаем размеры как у scrollPaneButton
+                expandingScrollPane.setBounds(
+                        x,
+                        y,
+                        scrollPaneButton.getWidth(),
+                        scrollPaneButton.getHeight()-10
+                );
+            }
 
             // Изменяем размеры и положение кнопок
             int buttonY = scrollPaneHeight / 15;
@@ -277,10 +296,9 @@ public class ViewModelTextFields extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 if (isEditMode) {
                     if (isEditingLongPlaceholders) {
-                        // Если находимся в режиме редактирования длинных подсказок,
-                        // просто возвращаемся в обычный режим редактирования
                         isEditingLongPlaceholders = false;
                         setupMode();
+                        adjustScrollPaneSizes(); // Обновляем размеры после выхода
                     } else {
                         // Если находимся в обычном режиме редактирования,
                         // выходим на стартовый экран
@@ -369,8 +387,42 @@ public class ViewModelTextFields extends JPanel {
         editLongPlaceholdersButton.setVisible(false);
         editLongPlaceholdersButton.addActionListener(e -> enterLongPlaceholdersEditMode());
         add(editLongPlaceholdersButton);
+        expandingTextArea = new JTextArea();
+        expandingTextArea.setLineWrap(true);
+        expandingTextArea.setWrapStyleWord(true);
+        expandingTextArea.setFont(new Font("Arial", Font.PLAIN, 14));
+        expandingScrollPane = new JScrollPane(expandingTextArea);
+        expandingScrollPane.setVisible(false);
+        ViewStyles.styleScrollBar(expandingScrollPane.getVerticalScrollBar());
+        add(expandingScrollPane);
+    }
+    private boolean isTextFieldOverflow(JTextField textField) {
+        FontMetrics metrics = textField.getFontMetrics(textField.getFont());
+        int textWidth = metrics.stringWidth(textField.getText());
+        return textWidth > textField.getWidth();
+    }
+    private void showExpandingTextArea(JTextField textField) {
+        currentExpandedTextField = textField;
+        expandingTextArea.setText(textField.getText());
+        Point buttonLocation = scrollPaneButton.getLocation();
+        int x = buttonLocation.x;
+        int y = buttonLocation.y + scrollPaneButton.getHeight() + 10;
+        expandingScrollPane.setBounds(x, y, scrollPaneButton.getWidth(), scrollPaneButton.getHeight()-10);
+        expandingScrollPane.setVisible(true);
+        expandingTextArea.requestFocusInWindow();
+        revalidate();
+        repaint();
     }
 
+    private void hideExpandingTextArea() {
+        if (currentExpandedTextField != null && expandingScrollPane != null) {
+            currentExpandedTextField.setText(expandingTextArea.getText());
+            expandingScrollPane.setVisible(false);
+            currentExpandedTextField = null;
+            revalidate();
+            repaint();
+        }
+    }
     private void handleNormalModelFileSelection() {
         FileDialog fileDialog = new FileDialog((Frame) null, "Выберите файл", FileDialog.LOAD);
         fileDialog.setFile("*.doc;*.docx");
@@ -937,16 +989,37 @@ public class ViewModelTextFields extends JPanel {
         for (String tag : tags) {
             JTextField textField = new JTextField();
             String longPlaceholder = tagDatabase.getPlaceholderLong(tag);
-
-            // Настройка поля для редактирования длинной подсказки
             textField.putClientProperty("originalTag", tag);
             textField.setText(longPlaceholder != null ? longPlaceholder : "");
-            textField.setToolTipText("Длинная подсказка для тега: " + tag);
-
-            // Стилизация и добавление на панель
             ViewStyles.styleTextField(textField);
+
+            // Добавляем обработчики фокуса
+            textField.addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (isTextFieldOverflow(textField)) {
+                        showExpandingTextArea(textField);
+                    }
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (!e.isTemporary() && !expandingTextArea.equals(e.getOppositeComponent())) {
+                        hideExpandingTextArea();
+                    }
+                }
+            });
+
             textFieldPanel.add(textField);
         }
+
+        // Обработчик потери фокуса для текстовой области
+        expandingTextArea.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                hideExpandingTextArea();
+            }
+        });
 
         adjustTextFieldSizes();
         textFieldPanel.revalidate();
