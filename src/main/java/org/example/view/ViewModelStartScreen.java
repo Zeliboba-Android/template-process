@@ -12,7 +12,7 @@ import static org.example.main.Main.fileManager;
 
 
 public class ViewModelStartScreen extends JPanel {
-    private Main main;
+
     public ViewModelTextFields viewModelTextFields;
     public ViewModelTable viewModelTable;
     private JLabel labelChoosingGenerateMethod;
@@ -34,10 +34,9 @@ public class ViewModelStartScreen extends JPanel {
     private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
     private static final Dimension LABEL_SIZE = new Dimension((int)(250 * 1.4), (int)(50 * 1.4)); // Размер надписи
 
-    public ViewModelStartScreen(Main main) {
-        this.main = main;
-        viewModelTextFields = new ViewModelTextFields(main);
-        viewModelTable = new ViewModelTable(main);
+    public ViewModelStartScreen() {
+        viewModelTextFields = new ViewModelTextFields();
+        viewModelTable = new ViewModelTable();
 
         initializeStartScreen();
     }
@@ -151,7 +150,7 @@ public class ViewModelStartScreen extends JPanel {
         add(buttonGenerateWithTextFields, gbc);
         buttonGenerateWithTextFields.addActionListener(e -> {
             viewModelTextFields.setEditMode(false); // Явный сброс режима
-            main.switchToPanel(Main.PANEL_TEXT_FIELDS);
+            Main.switchToPanel(Main.PANEL_TEXT_FIELDS);
             verification = true;
         });
 
@@ -165,7 +164,7 @@ public class ViewModelStartScreen extends JPanel {
         buttonGenerateWithTable.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                main.switchToPanel(Main.PANEL_TABLE);
+                Main.switchToPanel(Main.PANEL_TABLE);
                 verification = false;
             }
         });
@@ -176,7 +175,7 @@ public class ViewModelStartScreen extends JPanel {
         add(buttonEditPlaceholders, gbc);
         buttonEditPlaceholders.addActionListener(e -> {
             viewModelTextFields.setEditMode(true);
-            main.switchToPanel(Main.PANEL_TEXT_FIELDS);
+            Main.switchToPanel(Main.PANEL_TEXT_FIELDS);
         });
     }
 

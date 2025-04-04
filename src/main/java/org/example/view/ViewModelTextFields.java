@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import static org.example.main.Main.*;
 
 public class ViewModelTextFields extends JPanel {
-    private Main main;
     private JButton generateButton;
     public JButton buttonBackSpace;
     public JButton chooseFileButton;
@@ -41,8 +40,7 @@ public class ViewModelTextFields extends JPanel {
     private JTextField currentExpandedTextField;
     Window window = SwingUtilities.getWindowAncestor(this);
 
-    ViewModelTextFields(Main main) {
-        this.main = main;
+    ViewModelTextFields() {
         ViewStyles.stylePanel(this);
         setLayout(null);
         setFocusable(true);
@@ -303,11 +301,11 @@ public class ViewModelTextFields extends JPanel {
                         // Если находимся в обычном режиме редактирования,
                         // выходим на стартовый экран
                         clearAll();
-                        main.switchToPanel(PANEL_START_SCREEN);
+                        Main.switchToPanel(PANEL_START_SCREEN);
                     }
                 } else {
                     // Если не в режиме редактирования, просто выходим на стартовый экран
-                    main.switchToPanel(PANEL_START_SCREEN);
+                    Main.switchToPanel(PANEL_START_SCREEN);
                 }
 
             }

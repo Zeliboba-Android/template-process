@@ -19,7 +19,6 @@ import java.util.Map;
 import static org.example.main.Main.*;
 
 public class ViewModelTable extends JPanel {
-    private Main main;
     public JButton generateButtonUsingTable;
     private JButton buttonBackSpace;
     public JButton createCSVButton;
@@ -34,9 +33,7 @@ public class ViewModelTable extends JPanel {
     private File[] selectedFiles;
     private String csvFilePath;
 
-    ViewModelTable(Main main) {
-        this.main = main;
-
+    ViewModelTable() {
         ViewStyles.stylePanel(this);
         setLayout(new BorderLayout()); // Используем BorderLayout для основного компонента
         setFocusable(true);
@@ -55,7 +52,7 @@ public class ViewModelTable extends JPanel {
         buttonBackSpace.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                main.switchToPanel(PANEL_START_SCREEN);
+                Main.switchToPanel(PANEL_START_SCREEN);
             }
         });
         buttonPanel.add(buttonBackSpace);

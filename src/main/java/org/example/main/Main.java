@@ -12,23 +12,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Main {
-    private JFrame frame;
+    private static JFrame frame;
     public static ViewModelStartScreen viewModelStartScreen;
     public static DocumentGenerator documentGenerator;
     public static FileManager fileManager;
     public static TagDatabase tagDatabase;
     public static TagExtractor tagExtractor;
-    private JPanel mainPanel;
-    private CardLayout cardLayout;
-    private Map<String, JPanel> panelMap;
+    private static JPanel mainPanel;
+    private static CardLayout cardLayout;
+    private static Map<String, JPanel> panelMap;
     public static final String PANEL_START_SCREEN = "startScreen";
     public static final String PANEL_TEXT_FIELDS = "textFields";
     public static final String PANEL_TABLE = "table";
 
-    private Main() {
+    private static void Init() {
         fileManager = new FileManager();
         documentGenerator = new DocumentGenerator(fileManager);
-        viewModelStartScreen = new ViewModelStartScreen(this);
+        viewModelStartScreen = new ViewModelStartScreen();
         panelMap = new HashMap<>();
         cardLayout = new CardLayout();
         tagDatabase = new TagDatabase();
@@ -42,7 +42,7 @@ public class Main {
         generateFrame();
     }
 
-    private void generateFrame() {
+    private static void generateFrame() {
         frame = new JFrame("Генерация документов");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setMinimumSize(new Dimension(1200, 700));
@@ -61,7 +61,7 @@ public class Main {
     }
 
     // Переключение панелей по строковому ключу
-    public void switchToPanel(String panelName) {
+    public static void switchToPanel(String panelName) {
         if (panelMap.containsKey(panelName)) {
             cardLayout.show(mainPanel, panelName);
         } else {
@@ -70,6 +70,6 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        new Main();
+        Main.Init();
     }
 }
