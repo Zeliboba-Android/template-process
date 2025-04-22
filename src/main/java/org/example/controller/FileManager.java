@@ -60,7 +60,7 @@ public class FileManager {
     }
 
     // Дублирование текста с помощью команды-тега
-    public File[] preprocessBlockFiles(File [] selectedFiles){
+    public File[] preprocessBlockFiles(File[] selectedFiles) {
         List<File> processedFiles = new ArrayList<>();
         // Проходим по всем выбранным файлам
         for (File file : selectedFiles) {
@@ -99,5 +99,31 @@ public class FileManager {
         }
         // Возвращаем массив с новыми файлами для дальнейшей генерации
         return processedFiles.toArray(new File[0]);
+    }
+
+    // метод для обработки additional файла
+    public void preprocessAdditionalFiles(List<File> filesToProcess, int countAuthors) {
+        for (File file : filesToProcess) {
+            // Если имя файла начинается с "additional_", его нужно предварительно обработать
+            if (file.getName().startsWith("additional_") && file.getName().endsWith(".docx")) {
+                // Получаем родительскую директорию исходного файла
+                String parentDir = file.getParent();
+                // Формируем объект новой директории "additional_files"
+                File additionalDir = new File(parentDir, "additional_files");
+
+                String templateName = countAuthors + "_Заявление РП (доп).docx";
+                File newFile = new File(additionalDir, templateName);
+
+                if (!newFile.exists()) {
+                    System.err.println("Шаблон для additional (" + templateName + ") не найден в " + additionalDir);
+                    return;
+                }
+
+                filesToProcess.add(newFile);
+                filesToProcess.remove(file);
+
+                return;
+            }
+        }
     }
 }
