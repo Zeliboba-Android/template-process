@@ -1,13 +1,14 @@
 package org.example.view;
 
 import org.example.main.Main;
-import org.example.model.TagExtractor;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+
+import static org.example.main.Main.appState;
 import static org.example.main.Main.fileManager;
 
 
@@ -31,15 +32,25 @@ public class ViewModelStartScreen extends JPanel {
     private JLabel chosenDirectoryLabel;
 
     // Константы для одинакового размера компонентов
-    private static final Dimension COMPONENT_SIZE = new Dimension((int)(250 * 1.4), (int)(40 * 1.4));
-    private static final Dimension LABEL_SIZE = new Dimension((int)(250 * 1.4), (int)(50 * 1.4)); // Размер надписи
+    private static final Dimension COMPONENT_SIZE = new Dimension((int) (250 * 1.4), (int) (40 * 1.4));
+    private static final Dimension LABEL_SIZE = new Dimension((int) (250 * 1.4), (int) (50 * 1.4)); // Размер надписи
 
     public ViewModelStartScreen() {
         viewModelTextFields = new ViewModelTextFields();
         viewModelTable = new ViewModelTable();
 
         initializeStartScreen();
+        authorComboBox.setSelectedItem(appState.getNumberOfAuthors());
+        if (appState.getSaveDirectory() != null) {
+            chosenDirectoryLabel.setText("Путь: " + appState.getSaveDirectory());
+            buttonGenerateWithTextFields.setEnabled(true);
+            buttonGenerateWithTable.setEnabled(true);
+        }
+
+        authorComboBox.addActionListener(e ->
+                appState.setNumberOfAuthors((int) authorComboBox.getSelectedItem()));
     }
+
     private void initializeStartScreen() {
         // Применяем стиль к текущей панели
         ViewStyles.stylePanel(this);
@@ -106,6 +117,7 @@ public class ViewModelStartScreen extends JPanel {
                     fileManager.setTargetFolderPath(chosenDirectoryPath);
                     buttonGenerateWithTextFields.setEnabled(true);
                     buttonGenerateWithTable.setEnabled(true);
+                    appState.setSaveDirectory(chosenDirectoryPath);
                 }
             }
         });
@@ -129,7 +141,9 @@ public class ViewModelStartScreen extends JPanel {
         gbc.gridy = 6;
         add(convertToPdfCheckBox, gbc);
         // Обрабатываем изменение состояния чекбокса
-        convertToPdfCheckBox.addActionListener(e -> convertToPdf = convertToPdfCheckBox.isSelected());
+        convertToPdfCheckBox.setSelected(appState.isConvertToPdf());
+        convertToPdfCheckBox.addActionListener(e ->
+                appState.setConvertToPdf(convertToPdfCheckBox.isSelected()));
 
         // Создаем и стилизуем метку для выбора метода генерации
         labelChoosingGenerateMethod = new JLabel("Как сгенерировать документ?");
@@ -150,6 +164,7 @@ public class ViewModelStartScreen extends JPanel {
         add(buttonGenerateWithTextFields, gbc);
         buttonGenerateWithTextFields.addActionListener(e -> {
             viewModelTextFields.setEditMode(false); // Явный сброс режима
+            Main.shouldSaveState = true; // Разрешаем сохранение
             Main.switchToPanel(Main.PANEL_TEXT_FIELDS);
             verification = true;
         });
@@ -165,6 +180,7 @@ public class ViewModelStartScreen extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Main.switchToPanel(Main.PANEL_TABLE);
+                Main.shouldSaveState = false; // Запрещаем сохранение
                 verification = false;
             }
         });

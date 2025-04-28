@@ -1,6 +1,7 @@
 package org.example.view;
 
 import org.example.main.Main;
+import org.example.model.AppState;
 import org.example.model.TagMap;
 
 import javax.swing.*;
@@ -9,6 +10,10 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -24,6 +29,7 @@ public class ViewModelTextFields extends JPanel {
     private JButton showAllTagsButton;
     private JButton clearButton;
     private JButton editLongPlaceholdersButton;
+    private JButton resetDataButton; // Новая кнопка
     private boolean isEditingLongPlaceholders = false;
     private JLabel chooseFileLabel;
     private JPanel textFieldPanel;
@@ -32,31 +38,85 @@ public class ViewModelTextFields extends JPanel {
     private JPopupMenu popupMenu = new JPopupMenu();
     private JPanel buttonPanel;
     private HashMap<String, List<String>> fileTagMap;
-    private TagMap tagValuesMap; /// Используется для сохранения введёных в окна ввода значений
-    private File[] selectedFiles;
+    private final TagMap tagValuesMap; /// Используется для сохранения введёных в окна ввода значений
+    public File[] selectedFiles;
     private boolean isEditMode = false;
     private JTextArea expandingTextArea;
     private JScrollPane expandingScrollPane;
     private JTextField currentExpandedTextField;
     Window window = SwingUtilities.getWindowAncestor(this);
 
-    ViewModelTextFields() {
+    public ViewModelTextFields() {
         ViewStyles.stylePanel(this);
         setLayout(null);
         setFocusable(true);
-        tagValuesMap = new TagMap();
+        tagValuesMap = Main.tagMap;
+
+        // Инициализация интерфейса
+
         initializeUI();
         setupMode();
         clearAll();
-        // Добавляем слушатель для изменения размеров панели
+
+        // Восстановление состояния
+        restoreSelectedFiles();    // восстановление файлов
+        restoreTextFieldValues();  // восстановление значений полей
+
+        // Слушатель изменения размеров
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
                 adjustScrollPaneSizes();
             }
         });
+
+        // Инициализация расширяющейся текстовой области
+        initExpandingTextArea();  //  вынесено в отдельный метод
     }
 
+    private void initExpandingTextArea() {
+        expandingTextArea = new JTextArea();
+        expandingTextArea.setLineWrap(true);
+        expandingTextArea.setWrapStyleWord(true);
+        expandingTextArea.setFont(new Font("Arial", Font.PLAIN, 14));
+        expandingScrollPane = new JScrollPane(expandingTextArea);
+        expandingScrollPane.setVisible(false);
+        ViewStyles.styleScrollBar(expandingScrollPane.getVerticalScrollBar());
+        add(expandingScrollPane);
+    }
+
+    private void restoreSelectedFiles() {
+        if (Main.appState.getSelectedFilePaths() != null && !Main.appState.getSelectedFilePaths().isEmpty()) {
+            selectedFiles = Main.appState.getSelectedFilePaths().stream()
+                    .map(File::new)
+                    .toArray(File[]::new);
+
+            // Обновляем интерфейс
+            chooseFileLabel.setText("Выбранные файлы: ");
+            fileTagMap = tagExtractor.writeTagsToMap(selectedFiles);
+            generateFileButtons(fileTagMap);
+            generateTextFields(getAllTags(fileTagMap));
+        }
+    }
+
+    // Метод для загрузки значений в поля
+    private void restoreTextFieldValues() {
+        Map<String, String> savedValues = Main.appState.getTagValues();
+        if (savedValues == null) return;
+
+        for (Component comp : textFieldPanel.getComponents()) {
+            if (comp instanceof JTextField) {
+                JTextField tf = (JTextField) comp;
+                String tag = (String) tf.getClientProperty("tag");
+
+                if (tag != null && savedValues.containsKey(tag)) {
+                    String value = savedValues.get(tag);
+                    tf.setText(value);
+                    tf.setForeground(Color.BLACK);
+                }
+            }
+        }
+    }
     private void setupMode() {
         System.out.println(isEditMode);
         editLongPlaceholdersButton.setVisible(isEditMode);
@@ -206,7 +266,8 @@ public class ViewModelTextFields extends JPanel {
             // Изменяем размеры и положение кнопок
             int buttonY = scrollPaneHeight / 15;
             int buttonSpacing = 20; // Фиксированное расстояние между кнопками
-
+            int resetButtonX = scrollPaneButtonX - scrollPaneButtonX / 4 - buttonWidth - buttonSpacing;
+            resetDataButton.setBounds(resetButtonX, buttonY, buttonWidth, buttonHeight);
             chooseFileButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, buttonY, buttonWidth, buttonHeight);
             editLongPlaceholdersButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 2 - scrollPaneButtonX / 7 ,buttonY,buttonWidth,buttonHeight);
             clearButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4 + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight);
@@ -311,7 +372,10 @@ public class ViewModelTextFields extends JPanel {
             }
         });
         add(buttonBackSpace);
-
+        resetDataButton = new JButton("Сбросить состояние системы");
+        ViewStyles.styleButton(resetDataButton);
+        resetDataButton.addActionListener(e -> resetAppState());
+        add(resetDataButton);
         chooseFileLabel = new JLabel("Файлы не выбраны");
         chooseFileLabel.setBounds(300, 40, 400, 30); // Устанавливаем фиксированные размеры
         ViewStyles.styleLabel(chooseFileLabel);
@@ -350,8 +414,8 @@ public class ViewModelTextFields extends JPanel {
                 fillTagsAndCallGeneration();
 
                 // Очищаем текстовые поля
-//                clearTextFields();
-//                tagValuesMap.clear();
+                clearTextFields();
+                tagValuesMap.clear();
             }
         });
         add(generateButton);
@@ -394,6 +458,41 @@ public class ViewModelTextFields extends JPanel {
         ViewStyles.styleScrollBar(expandingScrollPane.getVerticalScrollBar());
         add(expandingScrollPane);
     }
+
+    private void resetAppState() {
+        // Кастомные тексты кнопок
+        Object[] options = {"Подтвердить", "Отмена"};
+
+        int confirm = JOptionPane.showOptionDialog(
+                this,
+                "Вы уверены, что хотите сбросить состояние системы?",
+                "Подтверждение сброса",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                options,  // Передаем кастомные кнопки
+                options[0] // Кнопка по умолчанию
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                // Очищаем состояние приложения
+                Main.appState = new AppState();
+                Main.tagMap.clear();
+
+                // Удаляем файл
+                Path path = Paths.get(System.getProperty("user.home"), "DocCraft", "appstate.json");
+                Files.deleteIfExists(path);
+
+                // Сбрасываем UI
+                clearAll();
+                restoreTextFieldValues();
+                JOptionPane.showMessageDialog(this, "Все данные сброшены!");
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Ошибка при сбросе данных: " + ex.getMessage());
+            }
+        }
+    }
     private boolean isTextFieldOverflow(JTextField textField) {
         FontMetrics metrics = textField.getFontMetrics(textField.getFont());
         int textWidth = metrics.stringWidth(textField.getText());
@@ -428,28 +527,27 @@ public class ViewModelTextFields extends JPanel {
         fileDialog.setVisible(true);
         File[] newSelectedFiles = fileDialog.getFiles();
 
-        // Если выбор не произведен (массив пуст или null), сохраняем предыдущие выбранные файлы
         if (newSelectedFiles == null || newSelectedFiles.length == 0) {
             JOptionPane optionPane = new JOptionPane(
                     "Выбор файлов не изменён.",
                     JOptionPane.INFORMATION_MESSAGE,
                     JOptionPane.DEFAULT_OPTION
             );
-
-            // Стилизуем окно с сообщением
             ViewStyles.styleOptionPane(optionPane);
-
-            // Создаем и стилизуем диалог
             JDialog dialog = optionPane.createDialog(null, "Информация");
             dialog.setVisible(true);
-
             return;
         }
 
-        // Если выбор был произведён, обновляем массив и остальные элементы
         selectedFiles = newSelectedFiles;
         selectedFiles = fileManager.preprocessBlockFiles(selectedFiles);
         tagValuesMap.clear();
+
+        // Сохраняем выбранные файлы в состоянии
+        List<String> filePaths = Arrays.stream(selectedFiles)
+                .map(File::getAbsolutePath)
+                .collect(Collectors.toList());
+        Main.appState.setSelectedFilePaths(filePaths);
 
         chooseFileLabel.setText("Выбранные файлы: ");
         viewModelStartScreen.select = new String[selectedFiles.length];
@@ -563,9 +661,7 @@ public class ViewModelTextFields extends JPanel {
                 .filter(tag -> isTagRelevant(tag, viewModelStartScreen.selectedNumber))
                 .collect(Collectors.toList());
 
-        System.out.println("Generating text fields for " + tags.size() + " tags");
-
-        List<JTextField> textFields = new ArrayList<>(); // Список для хранения всех полей
+        List<JTextField> textFields = new ArrayList<>();
         int padding = 10;
         int topPadding = 10;
         int fieldHeight = 30;
@@ -578,25 +674,56 @@ public class ViewModelTextFields extends JPanel {
         for (int i = 0; i < tags.size(); i++) {
             String tag = tags.get(i);
             JTextField textField = new JTextField();
-            textFields.add(textField); // Добавляем поле в список
+            textFields.add(textField);
 
-            final int currentIndex = i; // Фиксируем индекс для лямбда-выражения
+            final int currentIndex = i;
 
-            // Настройка позиционирования и стиля
+            // Добавляем обработчик изменений для сохранения значений
+            textField.getDocument().addDocumentListener(new DocumentListener() {
+                public void changedUpdate(DocumentEvent e) {
+                    saveFieldValue(tag, textField);
+                    updateGenerateButtonState();
+                }
+                public void removeUpdate(DocumentEvent e) {
+                    saveFieldValue(tag, textField);
+                    updateGenerateButtonState();
+                }
+                public void insertUpdate(DocumentEvent e) {
+                    saveFieldValue(tag, textField);
+                    updateGenerateButtonState();
+                }
+
+                private void saveFieldValue(String tag, JTextField field) {
+                    if (!isEditMode && field.getForeground() != Color.GRAY) {
+                        String value = field.getText().trim();
+                        // Обновляем и локальную map, и appState
+                        tagValuesMap.put(tag, value);
+                        if(Main.shouldSaveState) {
+                            Main.appState.getTagValues().put(tag, value);
+                        }
+                    }
+                }
+            });
+
             int yPos = topPadding + i * (fieldHeight + topPadding);
             textField.setBounds(padding, yPos, textFieldPanel.getWidth() - 2 * padding, fieldHeight);
 
-            // Настройка режима
             if (isEditMode) {
                 setupTextFieldForEditMode(textField, tag);
             } else {
                 setupTextFieldForNormalMode(textField, tag);
+
+                // Восстанавливаем сохранённое значение
+                String savedValue = Main.appState.getTagValues().get(tag);
+                if (savedValue != null && !savedValue.isEmpty()) {
+                    textField.setText(savedValue);
+                    textField.setForeground(Color.BLACK);
+                }
             }
 
             ViewStyles.styleTextField(textField);
             textFieldPanel.add(textField);
-            adjustTextFieldSizes();
-            // Добавляем слушатель клавиш
+
             textField.addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent e) {
@@ -613,21 +740,6 @@ public class ViewModelTextFields extends JPanel {
                             fieldVisibility(nextField);
                         }
                     }
-                }
-            });
-
-            // Существующий DocumentListener
-            textField.getDocument().addDocumentListener(new DocumentListener() {
-                public void changedUpdate(DocumentEvent e) {
-                    updateGenerateButtonState();
-                }
-
-                public void removeUpdate(DocumentEvent e) {
-                    updateGenerateButtonState();
-                }
-
-                public void insertUpdate(DocumentEvent e) {
-                    updateGenerateButtonState();
                 }
             });
         }
@@ -702,7 +814,7 @@ public class ViewModelTextFields extends JPanel {
         String placeholder = tagDatabase.getPlaceholder(tag);
 
         // Если значение уже введено - используем его
-        String currentValue = tagValuesMap.getOrDefault(tag, "");
+        String currentValue = Main.appState.getTagValues().getOrDefault(tag, "");
 
         if (!currentValue.isEmpty()) {
             textField.setText(currentValue);
