@@ -25,6 +25,7 @@ public class DocumentGenerator {
         List<File> filesToProcess = new ArrayList<>(List.of(selectedFiles));
         int countAuthors = ViewModelStartScreen.selectedNumber;
         if (countAuthors > 1) {
+            fileManager.preprocessAdditionalFiles(filesToProcess, countAuthors);
             // Проверяем, есть ли файлы с ключевыми словами
             boolean hasSpecialFiles = filesToProcess.stream().map(File::getName)
                     .anyMatch(name -> name.contains("main") || name.contains("additional") || name.contains("multi"));
@@ -56,10 +57,6 @@ public class DocumentGenerator {
                 // Объединяем теги первого автора и общие теги
                 processMainFile(file, fileName, additionalAuthors);
                 iterator.remove();
-            } else if (fileName.contains("additional")) {
-                // Обрабатываем дополнительные файлы для остальных авторов
-                processAdditionalFile(file, fileName, additionalAuthors);
-                iterator.remove();
             } else if (fileName.contains("multi")) {
                 processMultiFile(file, tagMap, countAuthors, fileName);
                 iterator.remove();
@@ -71,20 +68,6 @@ public class DocumentGenerator {
         TagMap combinedTagMap = copyTagMap.copyTagMap();
         combinedTagMap.combineTags(additionalAuthors.getMainTagMap());
         replaceText(file, combinedTagMap, fileName.replace("main_", "1_"));
-    }
-
-    private void processAdditionalFile(File file, String fileName, Authors additionalAuthors) {
-        for (int i = 1; i < additionalAuthors.getTagMaps().size(); i += 3) {
-            TagMap additionalTagMap = copyTagMap.copyTagMap();
-            StringBuilder authorNumbers = new StringBuilder();
-            for (int j = 0; j < 3; j++) {
-                if (i + j < additionalAuthors.getTagMaps().size()) {
-                    additionalTagMap.combineTags(additionalAuthors.getTagMapByIndex(i + j));
-                    authorNumbers.append(i + j + 1 + "_");
-                }
-            }
-            replaceText(file, additionalTagMap, fileName.replace("additional_", authorNumbers));
-        }
     }
 
     private void processMultiFile(File file, TagMap tagMap, int countAuthors, String fileName) {
