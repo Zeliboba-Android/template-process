@@ -1,12 +1,17 @@
 package org.example.view;
 
 import org.example.main.Main;
+import org.example.model.AppState;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.example.main.Main.appState;
 import static org.example.main.Main.fileManager;
@@ -18,18 +23,19 @@ public class ViewModelStartScreen extends JPanel {
     public ViewModelTable viewModelTable;
     private JLabel labelChoosingGenerateMethod;
     private JLabel labelChooseCountOfAuthor;
+    private JLabel universityLabel;
+    private JLabel chosenDirectoryLabel;
     private JButton buttonGenerateWithTextFields;
     private JButton buttonGenerateWithTable;
     private JButton buttonEditPlaceholders;
+    private JButton resetDataButton;
+    private JButton chooseDirectoryButton;
     public JComboBox<Integer> authorComboBox;
-    private JLabel universityLabel;
     public boolean verification;
     public static int selectedNumber = 1;
     private JCheckBox convertToPdfCheckBox;
     public static boolean convertToPdf = false;
     String[] select;
-    private JButton chooseDirectoryButton;
-    private JLabel chosenDirectoryLabel;
 
     // Константы для одинакового размера компонентов
     private static final Dimension COMPONENT_SIZE = new Dimension((int) (250 * 1.4), (int) (40 * 1.4));
@@ -193,6 +199,90 @@ public class ViewModelStartScreen extends JPanel {
             viewModelTextFields.setEditMode(true);
             Main.switchToPanel(Main.PANEL_TEXT_FIELDS);
         });
+        resetDataButton = new JButton("Сбросить состояние системы");
+        ViewStyles.styleButton(resetDataButton);
+        resetDataButton.setPreferredSize(COMPONENT_SIZE);
+        resetDataButton.addActionListener(e -> resetAppState());
+        gbc.gridy = 11; // Позиция после последней кнопки
+        add(resetDataButton, gbc);
+    }
+    private void resetAppState() {
+        // Создаем кастомные кнопки
+        JButton confirmButton = new JButton("Подтвердить");
+        ViewStyles.styleButton(confirmButton);
+        confirmButton.setPreferredSize(new Dimension(140, 40));
+
+        JButton cancelButton = new JButton("Отмена");
+        ViewStyles.styleButton(cancelButton);
+        cancelButton.setPreferredSize(new Dimension(140, 40));
+
+        // Стилизуем текст сообщения
+        JLabel messageLabel = new JLabel("Вы уверены, что хотите сбросить состояние системы?");
+        messageLabel.setFont(ViewStyles.DEFAULT_FONT);
+        messageLabel.setForeground(ViewStyles.TEXT_COLOR_LABEL);
+
+        // Создаем кастомный диалог
+        JOptionPane pane = new JOptionPane(
+                messageLabel,
+                JOptionPane.WARNING_MESSAGE,
+                JOptionPane.DEFAULT_OPTION,
+                null,
+                new Object[]{confirmButton, cancelButton},
+                null // Убираем дефолтный выбор
+        );
+
+        JDialog dialog = pane.createDialog(this, "Подтверждение сброса");
+        dialog.getContentPane().setBackground(ViewStyles.BACKGROUND_COLOR);
+
+        // Добавляем обработчики кликов
+        confirmButton.addActionListener(e -> {
+            pane.setValue(confirmButton);
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> {
+            pane.setValue(cancelButton);
+            dialog.dispose();
+        });
+
+        dialog.setVisible(true);
+
+        // Получаем результат выбора
+        Object selectedValue = pane.getValue();
+        int confirm = (selectedValue == confirmButton)
+                ? JOptionPane.YES_OPTION
+                : JOptionPane.NO_OPTION;
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                Main.appState = new AppState();
+                Main.tagMap.clear();
+                Path path = Paths.get(System.getProperty("user.home"), "DocCraft", "appstate.json");
+                Files.deleteIfExists(path);
+
+                // Сброс UI элементов
+                chosenDirectoryLabel.setText("Путь не выбран");
+                authorComboBox.setSelectedIndex(0);
+                convertToPdfCheckBox.setSelected(false);
+                buttonGenerateWithTextFields.setEnabled(false);
+                buttonGenerateWithTable.setEnabled(false);
+
+                ViewStyles.showStyledMessage(
+                        this,
+                        "Все данные сброшены!",
+                        "Успех",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+
+            } catch (IOException ex) {
+                ViewStyles.showStyledMessage(
+                        this,
+                        "Ошибка при сбросе данных: " + ex.getMessage(),
+                        "Ошибка",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
     }
 
     public static boolean isConvertToPdfSelected() {

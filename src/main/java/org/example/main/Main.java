@@ -90,8 +90,8 @@ public class Main {
     private static void generateFrame() {
         frame = new JFrame("Генерация документов");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setMinimumSize(new Dimension(1200, 700));
-        frame.setSize(1200, 750);
+        frame.setMinimumSize(new Dimension(1200, 800));
+        frame.setSize(1200, 850);
 
         mainPanel = new JPanel(cardLayout);
         // Добавление всех зарегистрированных панелей

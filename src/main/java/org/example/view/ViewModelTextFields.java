@@ -29,7 +29,6 @@ public class ViewModelTextFields extends JPanel {
     private JButton showAllTagsButton;
     private JButton clearButton;
     private JButton editLongPlaceholdersButton;
-    private JButton resetDataButton; // Новая кнопка
     private boolean isEditingLongPlaceholders = false;
     private JLabel chooseFileLabel;
     private JPanel textFieldPanel;
@@ -267,7 +266,6 @@ public class ViewModelTextFields extends JPanel {
             int buttonY = scrollPaneHeight / 15;
             int buttonSpacing = 20; // Фиксированное расстояние между кнопками
             int resetButtonX = scrollPaneButtonX - scrollPaneButtonX / 4 - buttonWidth - buttonSpacing;
-            resetDataButton.setBounds(resetButtonX, buttonY, buttonWidth, buttonHeight);
             chooseFileButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4, buttonY, buttonWidth, buttonHeight);
             editLongPlaceholdersButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 2 - scrollPaneButtonX / 7 ,buttonY,buttonWidth,buttonHeight);
             clearButton.setBounds(scrollPaneButtonX - scrollPaneButtonX / 4 + buttonWidth + buttonSpacing, buttonY, buttonWidth, buttonHeight);
@@ -372,10 +370,6 @@ public class ViewModelTextFields extends JPanel {
             }
         });
         add(buttonBackSpace);
-        resetDataButton = new JButton("Сбросить состояние системы");
-        ViewStyles.styleButton(resetDataButton);
-        resetDataButton.addActionListener(e -> resetAppState());
-        add(resetDataButton);
         chooseFileLabel = new JLabel("Файлы не выбраны");
         chooseFileLabel.setBounds(300, 40, 400, 30); // Устанавливаем фиксированные размеры
         ViewStyles.styleLabel(chooseFileLabel);
@@ -457,41 +451,6 @@ public class ViewModelTextFields extends JPanel {
         expandingScrollPane.setVisible(false);
         ViewStyles.styleScrollBar(expandingScrollPane.getVerticalScrollBar());
         add(expandingScrollPane);
-    }
-
-    private void resetAppState() {
-        // Кастомные тексты кнопок
-        Object[] options = {"Подтвердить", "Отмена"};
-
-        int confirm = JOptionPane.showOptionDialog(
-                this,
-                "Вы уверены, что хотите сбросить состояние системы?",
-                "Подтверждение сброса",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE,
-                null,
-                options,  // Передаем кастомные кнопки
-                options[0] // Кнопка по умолчанию
-        );
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                // Очищаем состояние приложения
-                Main.appState = new AppState();
-                Main.tagMap.clear();
-
-                // Удаляем файл
-                Path path = Paths.get(System.getProperty("user.home"), "DocCraft", "appstate.json");
-                Files.deleteIfExists(path);
-
-                // Сбрасываем UI
-                clearAll();
-                restoreTextFieldValues();
-                JOptionPane.showMessageDialog(this, "Все данные сброшены!");
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Ошибка при сбросе данных: " + ex.getMessage());
-            }
-        }
     }
     private boolean isTextFieldOverflow(JTextField textField) {
         FontMetrics metrics = textField.getFontMetrics(textField.getFont());

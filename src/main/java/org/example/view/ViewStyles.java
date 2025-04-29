@@ -8,12 +8,12 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
 
 public class ViewStyles {
-    private static final Font DEFAULT_FONT = new Font("Arial", Font.BOLD, 14);
+    static final Font DEFAULT_FONT = new Font("Arial", Font.BOLD, 14);
     private static final Font LABEL_FONT = new Font("Arial",Font.BOLD,32);
-    private static final Color BACKGROUND_COLOR = new Color(255, 255, 255);  // светлый цвет фона
+    static final Color BACKGROUND_COLOR = new Color(255, 255, 255);  // светлый цвет фона
     private static final Color BUTTON_COLOR = new Color(7, 113, 181);      // цвет кнопок
     private static final Color TEXT_COLOR_BUTTON = Color.WHITE;// цвет текста
-    private static final Color TEXT_COLOR_LABEL = Color.BLACK;// цвет текста
+    static final Color TEXT_COLOR_LABEL = Color.BLACK;// цвет текста
     private static final Color COMBOBOX_BACKGROUND = new Color(255, 255, 255); // Белый фон
     private static final Color COMBOBOX_FOREGROUND = new Color(50, 50, 50);    // Темный текст
     private static final Color COMBOBOX_BORDER_COLOR = new Color(150, 150, 150); // Серый цвет границы
@@ -97,6 +97,41 @@ public class ViewStyles {
             arrowButton.setFocusPainted(false);
             return arrowButton;
         }
+    }
+    public static void showStyledMessage(Component parentComponent,
+                                         String message,
+                                         String title,
+                                         int messageType) {
+        // Стилизация текста сообщения
+        JLabel label = new JLabel(message);
+        label.setFont(DEFAULT_FONT);
+        label.setForeground(TEXT_COLOR_LABEL);
+
+        // Стилизация кнопки "OK"
+        JButton okButton = new JButton("OK");
+        styleButton(okButton);
+        okButton.setPreferredSize(new Dimension(100, 40));
+
+        // Создаем кастомный диалог
+        JOptionPane pane = new JOptionPane(
+                label,
+                messageType,
+                JOptionPane.DEFAULT_OPTION,
+                null,
+                new Object[]{okButton},
+                null // Убираем дефолтный выбор
+        );
+
+        JDialog dialog = pane.createDialog(parentComponent, title);
+        dialog.getContentPane().setBackground(BACKGROUND_COLOR);
+
+        // Добавляем обработчик клика на кнопку OK
+        okButton.addActionListener(e -> {
+            pane.setValue(okButton);
+            dialog.dispose();
+        });
+
+        dialog.setVisible(true);
     }
     // Метод для установки стандартного цвета и фона панели
     static void stylePanel(JPanel panel) {
