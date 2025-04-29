@@ -1,9 +1,6 @@
 package org.example.view;
 
-import org.example.controller.DocumentGenerator;
-import org.example.controller.FileManager;
 import org.example.main.Main;
-import org.example.model.TagExtractor;
 import org.example.model.TagMap;
 
 import javax.swing.*;
