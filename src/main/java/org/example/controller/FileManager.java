@@ -111,7 +111,7 @@ public class FileManager {
                 // Формируем объект новой директории "additional_files"
                 File additionalDir = new File(parentDir, "additional_files");
 
-                String templateName = countAuthors + "_Заявление РП (доп).docx";
+                String templateName = countAuthors + " Заявление РП (доп).docx";
                 File newFile = new File(additionalDir, templateName);
 
                 if (!newFile.exists()) {

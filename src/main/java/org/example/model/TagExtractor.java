@@ -41,13 +41,13 @@ public class TagExtractor {
                             if (!uniqueTags.contains(tag)) {
                                 String placeholder = tagDatabase.getPlaceholder(tag);
                                 String placeholder_Long = tagDatabase.getPlaceholderLong(tag);
-                                if (placeholder_Long == null){
+                                if (placeholder_Long == null) {
                                     placeholder_Long = placeholder;
                                 }
 
                                 // Обработка длинной подсказки для CSV
                                 placeholder_Long = placeholder_Long.replace("\n", " ").replace("\r", " "); // Убираем переносы строк
-                                        placeholder_Long = placeholder_Long.replace("\"", "\"\""); // Экранируем кавычки
+                                placeholder_Long = placeholder_Long.replace("\"", "\"\""); // Экранируем кавычки
 
                                 // Записываем строку в CSV, заключая длинную подсказку в кавычки
                                 writer.println(tag + ";" + placeholder + ";\"" + placeholder_Long + "\";1");
@@ -65,6 +65,7 @@ public class TagExtractor {
             e.printStackTrace();
         }
     }
+
     private Set<String> writeTagsToSet(File[] files) {
         Set<String> uniqueTags = new HashSet<>();
         Pattern pattern = Pattern.compile(regex);
@@ -122,12 +123,11 @@ public class TagExtractor {
     }
 
 
-
     private void addCountAuthors(boolean useCSV, PrintWriter writer) {
         Set<String> additionTags = new HashSet<>();
         int countAuthors = ViewModelStartScreen.selectedNumber;
 
-        if (countAuthors > 4) {
+        if (countAuthors > 1) {
             for (String tag : uniqueTags) {
                 if (tag.contains("key_ria_author1")) {
                     additionTags.add(tag);
@@ -160,7 +160,6 @@ public class TagExtractor {
     }
 
 
-
     private String readTextFromFile(File file) throws IOException {
         StringBuilder text = new StringBuilder();
         try (FileInputStream fis = new FileInputStream(file.getAbsolutePath())) {
@@ -186,10 +185,8 @@ public class TagExtractor {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csvFile), "cp1251"))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(";", 3);
-                if (parts.length == 3) {
-                    csvTags.add(parts[1].trim()); // Загружаем тег в set
-                }
+                String[] parts = line.split(";");
+                csvTags.add(parts[0].trim()); // Загружаем тег в set
             }
         } catch (IOException e) {
             e.printStackTrace();

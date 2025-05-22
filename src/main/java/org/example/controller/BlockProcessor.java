@@ -394,7 +394,7 @@ public class BlockProcessor {
         String result = sb.toString();
 
         // 2. Замена "Автор X" в обычном тексте
-        result = result.replaceAll("Автор X", "Автор " + authorNumber);
+        result = result.replaceAll("X", String.valueOf(authorNumber));
         return result;
     }
 
