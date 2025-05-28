@@ -33,8 +33,7 @@ public class ViewModelStartScreen extends JPanel {
     public JComboBox<Integer> authorComboBox;
     public boolean verification;
     public static int selectedNumber = 1;
-    private JCheckBox convertToPdfCheckBox;
-    public static boolean convertToPdf = false;
+    public static JCheckBox convertToPdfCheckBox;
     String[] select;
 
     // Константы для одинакового размера компонентов
@@ -149,8 +148,8 @@ public class ViewModelStartScreen extends JPanel {
         // Обрабатываем изменение состояния чекбокса
         convertToPdfCheckBox.setSelected(appState.isConvertToPdf());
         convertToPdfCheckBox.addActionListener(e ->
-                appState.setConvertToPdf(convertToPdfCheckBox.isSelected()));
-
+                appState.setConvertToPdf(convertToPdfCheckBox.isSelected())
+        );
         // Создаем и стилизуем метку для выбора метода генерации
         labelChoosingGenerateMethod = new JLabel("Как сгенерировать документ?");
         ViewStyles.styleLabel(labelChoosingGenerateMethod);
@@ -283,9 +282,5 @@ public class ViewModelStartScreen extends JPanel {
                 );
             }
         }
-    }
-
-    public static boolean isConvertToPdfSelected() {
-        return convertToPdf;
     }
 }

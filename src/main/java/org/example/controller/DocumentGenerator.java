@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import static org.example.view.ViewModelStartScreen.isConvertToPdfSelected;
+import static org.example.view.ViewModelStartScreen.convertToPdfCheckBox;
 
 /**
  * @author Денис on 21.05.2024
@@ -49,7 +49,7 @@ public class DocumentGenerator {
         }
 
         // Конвертация в PDF, если включена опция convertToPdf
-        if (isConvertToPdfSelected()) {
+        if (convertToPdfCheckBox.isSelected()) {
             PdfConverter pdfConverter = new PdfConverter(fileManager.getOutputFolderPath());
             pdfConverter.convertAllWordDocumentsToPdf();
         }
