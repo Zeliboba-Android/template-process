@@ -147,7 +147,7 @@ public class DocumentGenerator {
     private String getFileNumberPrefix(String fileName) {
         if (fileName.contains("Титульный лист для листинга")) return "1. ";
         if (fileName.contains("Заявление РП (доп)")) return "2.";
-        if (fileName.contains("Реферат программы ЭВМ")) return "6. ";
+        if (fileName.contains("Реферат программы")) return "6. ";
         if (fileName.contains("Уведомление заявка")) return "7. ";
         if (fileName.contains("Уведомление о создании РИД")) return "8. ";
         if (fileName.startsWith("Договор ЭВМ")) return "9. ";

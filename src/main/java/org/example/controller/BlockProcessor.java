@@ -5,6 +5,7 @@ import org.apache.xmlbeans.XmlCursor;
 import org.apache.xmlbeans.impl.values.XmlValueDisconnectedException;
 import org.example.view.ViewModelStartScreen;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTP;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSpacing;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -498,6 +499,7 @@ public class BlockProcessor {
         int spacingAfter;
         int spacingBetween;
         String styleId;
+        CTSpacing ctSpacing;
 
         public ParagraphStyle(XWPFParagraph p) {
             this.alignment = p.getAlignment();
@@ -508,28 +510,31 @@ public class BlockProcessor {
             this.spacingAfter = p.getSpacingAfter();
             this.spacingBetween = (int) p.getSpacingBetween();
             this.styleId = p.getStyle();
+            // если в PPr есть элемент <w:spacing>, клонируем его
+            if (p.getCTP().getPPr() != null && p.getCTP().getPPr().isSetSpacing()) {
+                this.ctSpacing = (CTSpacing) p.getCTP().getPPr().getSpacing().copy();
+            } else {
+                this.ctSpacing = null;
+            }
         }
     }
 
     private void applyParagraphStyle(XWPFParagraph target, ParagraphStyle ps) {
-        // Сохраняем оригинальные настройки для таблиц
-        if (target.getBody() instanceof XWPFTableCell) {
-            target.setAlignment(ps.alignment);
-            target.setIndentationFirstLine(ps.indentationFirstLine);
-            target.setIndentationLeft(ps.indentationLeft);
-            target.setIndentationRight(ps.indentationRight);
-            target.setSpacingBefore(ps.spacingBefore);
-            target.setSpacingAfter(ps.spacingAfter);
-        } else {
-            // Стандартное применение стилей для обычных абзацев
-            target.setAlignment(ps.alignment);
-            target.setIndentationFirstLine(ps.indentationFirstLine);
-            target.setIndentationLeft(ps.indentationLeft);
-            target.setIndentationRight(ps.indentationRight);
-            target.setSpacingBefore(ps.spacingBefore);
-            target.setSpacingAfter(ps.spacingAfter);
-            target.setSpacingBetween(ps.spacingBetween);
+        target.setAlignment(ps.alignment);
+        target.setIndentationFirstLine(ps.indentationFirstLine);
+        target.setIndentationLeft(ps.indentationLeft);
+        target.setIndentationRight(ps.indentationRight);
+        target.setSpacingBefore(ps.spacingBefore);
+        target.setSpacingAfter(ps.spacingAfter);
+        // применяем клонированный объект CTSpacing, если он был
+        if (ps.ctSpacing != null) {
+            // гарантируем, что в свойствах параграфа есть PPr
+            if (target.getCTP().getPPr() == null) {
+                target.getCTP().addNewPPr();
+            }
+            target.getCTP().getPPr().setSpacing((CTSpacing) ps.ctSpacing.copy());
         }
+
         target.setStyle(ps.styleId);
     }
 
